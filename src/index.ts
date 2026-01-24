@@ -4,6 +4,7 @@ import { createServer } from "@buape/carbon/adapters/bun"
 import GithubCommand from "./commands/github.js"
 import ApplicationAuthorized from "./events/authorized.js"
 import AutoModerationActionExecution from "./events/autoModerationActionExecution.js"
+import Ready from "./events/ready.js"
 
 const gateway = new GatewayPlugin({
 	intents:
@@ -20,11 +21,16 @@ const client = new Client(
 		clientId: process.env.DISCORD_CLIENT_ID ?? "unused",
 		publicKey: process.env.DISCORD_PUBLIC_KEY ?? "unused",
 		token: process.env.DISCORD_BOT_TOKEN ?? "",
+		autoDeploy: true,
 		devGuilds: process.env.DISCORD_DEV_GUILDS?.split(","), // Optional: comma-separated list of dev guild IDs
 	},
 	{
 		commands: [new GithubCommand()],
-		listeners: [new ApplicationAuthorized(), new AutoModerationActionExecution()],
+		listeners: [
+			new ApplicationAuthorized(),
+			new AutoModerationActionExecution(),
+			new Ready()
+		],
 	},
 	[gateway]
 )
