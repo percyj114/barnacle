@@ -157,10 +157,16 @@ export default class AutoModerationActionExecution extends AutoModerationActionE
 			const member = await resolveMember(data)
 			const displayName =
 				member?.nickname ||
+				member?.user?.globalName ||
+				member?.user?.username ||
 				data.user?.globalName ||
 				data.user?.username ||
-				"Unknown User"
-			const avatarUrl = member?.avatarUrl || data.user?.avatarUrl || undefined
+				data.user_id
+			const avatarUrl =
+				member?.avatarUrl ||
+				member?.user?.avatarUrl ||
+				data.user?.avatarUrl ||
+				undefined
 
 			await sendWebhookMessage(webhook, {
 				components: [new TextDisplay(redactedContent)],
