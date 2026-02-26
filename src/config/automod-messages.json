@@ -36,11 +36,13 @@
     },
     {
       "trigger": "testflight",
-      "message": "Thank you for your interest - there's currently no Testflight program, if you want to run OpenClaw on your phone, please compile the code in the repo (Claude Code, Codex or Gemini can help you), and feel free to submit PRs if you find issues. We'll let the community know once Testflight becomes available"
+      "message": "Thank you for your interest - there's currently no Testflight program, if you want to run OpenClaw on your phone, please compile the code in the repo (Claude Code, Codex or Gemini can help you), and feel free to submit PRs if you find issues. We'll let the community know once Testflight becomes available\n-# Your message was reposted above for the sake of conversation.",
+      "redact": false
     },
     {
       "trigger": "test flight",
-      "message": "Thank you for your interest - there's currently no Testflight program, if you want to run OpenClaw on your phone, please compile the code in the repo (Claude Code, Codex or Gemini can help you), and feel free to submit PRs if you find issues. We'll let the community know once Testflight becomes available"
+      "message": "Thank you for your interest - there's currently no Testflight program, if you want to run OpenClaw on your phone, please compile the code in the repo (Claude Code, Codex or Gemini can help you), and feel free to submit PRs if you find issues. We'll let the community know once Testflight becomes available\n-# Your message was reposted above for the sake of conversation.",
+      "redact": false
     }
   ]
 }
