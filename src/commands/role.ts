@@ -1,11 +1,9 @@
 import {
 	ApplicationIntegrationType,
-	Container,
 	InteractionContextType,
 	type CommandInteraction,
 	CommandWithSubcommands,
 	Permission,
-	TextDisplay,
 	ApplicationCommandOptionType
 } from "@buape/carbon"
 import BaseCommand from "./base.js"
@@ -47,7 +45,10 @@ class RoleToggle extends BaseCommand {
 		)
 
 		if (!hasAccess) {
-			await interaction.reply("no.")
+			await interaction.reply({
+				content: "no.",
+				allowedMentions: { parse: [] }
+			})
 			return
 		}
 
@@ -55,7 +56,10 @@ class RoleToggle extends BaseCommand {
 		const targetMember = await interaction.guild.fetchMember(target.id)
 
 		if (!targetMember) {
-			await interaction.reply("User not found in the server.")
+			await interaction.reply({
+				content: "User not found in the server.",
+				allowedMentions: { parse: [] }
+			})
 			return
 		}
 
@@ -69,16 +73,8 @@ class RoleToggle extends BaseCommand {
 		}
 
 		await interaction.reply({
-			components: [
-				new Container(
-					[
-						new TextDisplay(
-							`${verb} <@&${this.roleId}> ${hasRole ? "from" : "to"} ${targetMember.nickname ?? targetMember.user.globalName ?? targetMember.user.username}.`
-						)
-					],
-					{ accentColor: "#3fb950" }
-				)
-			]
+			content: `${verb} <@&${this.roleId}> ${hasRole ? "from" : "to"} ${targetMember.nickname ?? targetMember.user.globalName ?? targetMember.user.username}.`,
+			allowedMentions: { parse: [] }
 		})
 	}
 }
