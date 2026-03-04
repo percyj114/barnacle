@@ -37,7 +37,7 @@ class SayUserHelpCommand extends SayCommand {
 class SayModelCommand extends SayCommand {
 	name = "model"
 	description = "Point to the model discussion channel"
-	protected message = "Any discussion about various AI models should be taken to <#1456704705219661980>."
+	protected message = "Any discussion about various AI models should be taken to <#1478196963563409520>."
 }
 
 class SayStuckCommand extends SayCommand {
