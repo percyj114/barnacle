@@ -36,8 +36,11 @@ export default class ThreadCreateWelcome extends ThreadCreateListener {
 			return
 		}
 
+		const configuredTemplate = process.env.HELPER_THREAD_WELCOME_TEMPLATE
 		const template =
-			process.env.HELPER_THREAD_WELCOME_TEMPLATE ?? defaultWelcomeTemplate
+			configuredTemplate && configuredTemplate.trim().length > 0
+				? configuredTemplate
+				: defaultWelcomeTemplate
 
 		const createdAt = thread.createTimestamp ?? new Date().toISOString()
 		const initialMessageCount =
