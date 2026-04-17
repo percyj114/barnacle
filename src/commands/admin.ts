@@ -18,6 +18,7 @@ const shadow = "439223656200273932"
 const trialModRoleId = "1474489940279820339"
 const trialModChannel = "1474490215807713301"
 const teamLeadsRoleId = "1469028608293998723"
+const inactivityWarnChannel = "1477357508833185954"
 
 const teamLead = (team: string) => {
 	switch (team) {
@@ -47,6 +48,7 @@ export default class AdminCommand extends CommandWithSubcommandGroups {
 	]
 	subcommands = [
 		new Say(),
+		new InactivityWarn(),
 		new AutomodBypassToggle()
 	]
 }
@@ -267,6 +269,83 @@ If you have any questions or need anything going forward, please ask in your tea
 
 		await interaction.reply({
 			content: `Promoted <@${user.user.id}> and added <@&${teamRole.id}>. Message sent in <#${channel.id}>.`,
+			ephemeral: true
+		})
+	}
+}
+
+export class InactivityWarn extends BaseCommand {
+	name = "inactivity-warn"
+	description = "Send a one-time inactivity warning in a private thread"
+	ephemeral = true
+
+	options = [
+		{
+			type: ApplicationCommandOptionType.User as const,
+			name: "user",
+			description: "The user to warn",
+			required: true
+		},
+		{
+			type: ApplicationCommandOptionType.Mentionable as const,
+			name: "lead",
+			description: "Optional lead to ping in the message",
+			required: false
+		}
+	]
+
+	async run(interaction: CommandInteraction) {
+		if (!interaction.guild) {
+			await interaction.reply({
+				content: "This command can only be used in a server.",
+				ephemeral: true
+			})
+			return
+		}
+		if (!isShadow(interaction)) {
+			await interaction.reply({
+				content: "You don't have permission to use this command.",
+				ephemeral: true
+			})
+			return
+		}
+
+		const user = interaction.options.getUser("user", true)
+		const lead = interaction.options.getMentionable("lead")
+		const leadLine = lead ? `ping your lead: ${lead}.` : "ping your lead."
+
+		const inactivityWarnChannelObj = await interaction.client.fetchChannel(inactivityWarnChannel)
+		if (!(inactivityWarnChannelObj?.type === ChannelType.GuildText)) {
+			await interaction.reply({
+				content: "Inactivity warn channel not found.",
+				ephemeral: true
+			})
+			return
+		}
+
+		const thread = await inactivityWarnChannelObj.startThread({
+			name: `${user.username}`,
+			type: ChannelType.PrivateThread
+		})
+
+		const deadline = Math.floor((Date.now() + 2 * 24 * 60 * 60 * 1000) / 1000)
+		await thread.send(`Hey <@${user.id}> — this is your one activity warning.
+
+You’ve been inactive lately, and we need a clear response to keep your staff role active.
+
+As a reminder, per [Activity Expectations](<https://github.com/openclaw/community/blob/main/moderation.md#activity-expectations>) and [Inactivity / Leave of Absence (LOA)](<https://github.com/openclaw/community/blob/main/moderation.md#inactivity--leave-of-absence-loa>), staff are expected to stay reasonably active and post LOA/inactivity notices in their team channel when away.
+
+Please reply in this channel by <t:${deadline}:F> (<t:${deadline}:R>) and confirm:
+- whether you can stay active right now
+- what your availability looks like this week
+- if anything is blocking you
+
+If you need time away, post an LOA in your team channel (dates) and ${leadLine}
+
+If there’s no response by that deadline, we’ll move forward with role removal.`)
+
+		await interaction.reply({
+			content: `Created inactivity warning thread for <@${user.id}> in <#${inactivityWarnChannel}>.`,
 			ephemeral: true
 		})
 	}
