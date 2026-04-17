@@ -327,6 +327,7 @@ export class InactivityWarn extends BaseCommand {
 			name: `${user.username}`,
 			type: ChannelType.PrivateThread
 		})
+		await thread.addMember(shadow).catch(() => { })
 
 		const deadline = Math.floor((Date.now() + 2 * 24 * 60 * 60 * 1000) / 1000)
 		await thread.send(`Hey <@${user.id}> — this is your one activity warning.
