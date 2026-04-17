@@ -9,7 +9,8 @@ import {
 	ArrayOrSingle,
 	PermissionFlagsBits,
 	ChannelType,
-	Command
+	Command,
+	type ApplicationCommandOptionAllowedChannelType
 } from "@buape/carbon"
 import BaseCommand from "./base.js"
 
@@ -197,6 +198,7 @@ While we do so, please make sure that you've read over our Community Policies, t
 export class TrialModPromote extends BaseCommand {
 	name = "promote"
 	description = "Promote a trial mod into their team role"
+	ephemeral = true
 
 	options = [
 		{
@@ -209,7 +211,8 @@ export class TrialModPromote extends BaseCommand {
 			type: ApplicationCommandOptionType.Channel as const,
 			name: "channel",
 			description: "The private thread to send the promotion message in",
-			required: true
+			required: true,
+			channel_types: [ChannelType.PrivateThread as ApplicationCommandOptionAllowedChannelType]
 		},
 		{
 			type: ApplicationCommandOptionType.Role as const,
@@ -256,7 +259,11 @@ export class TrialModPromote extends BaseCommand {
 		const teamRole = interaction.options.getRole("team", true)
 		user.addRole(teamRole.id, "Promoted trial mod to team role").catch(() => { })
 
-		await channel.send(`Congrats <@${user.user.id}> on passing trial! You've been added to <@&${teamRole.id}>.`)
+		await channel.send(`Congratulations <@${user.user.id}> on passing your trial period, and welcome to the Community Staff team!
+
+You've now been added to <@&${teamRole.id}>. Thank you for the time and effort you've put in during trial.
+
+If you have any questions or need anything going forward, please ask in your team channel rather than in this thread.`)
 
 		await interaction.reply({
 			content: `Promoted <@${user.user.id}> and added <@&${teamRole.id}>. Message sent in <#${channel.id}>.`,
