@@ -91,7 +91,8 @@ export class TrialMod extends CommandWithSubcommands {
 	name = "trial-mod"
 	description = "Manage trial mods"
 	subcommands = [
-		new TrialModAdd()
+		new TrialModAdd(),
+		new TrialModPromote()
 	]
 }
 
@@ -193,6 +194,76 @@ While we do so, please make sure that you've read over our Community Policies, t
 
 }
 
+export class TrialModPromote extends BaseCommand {
+	name = "promote"
+	description = "Promote a trial mod into their team role"
+
+	options = [
+		{
+			type: ApplicationCommandOptionType.User as const,
+			name: "user",
+			description: "The user to promote",
+			required: true
+		},
+		{
+			type: ApplicationCommandOptionType.Channel as const,
+			name: "channel",
+			description: "The private thread to send the promotion message in",
+			required: true
+		},
+		{
+			type: ApplicationCommandOptionType.Role as const,
+			name: "team",
+			description: "The team role to add the user to",
+			required: true
+		}
+	]
+
+	async run(interaction: CommandInteraction) {
+		if (!interaction.guild) {
+			await interaction.reply({
+				content: "This command can only be used in a server.",
+				ephemeral: true
+			})
+			return
+		}
+		if (!isShadow(interaction)) {
+			await interaction.reply({
+				content: "You don't have permission to use this command.",
+				ephemeral: true
+			})
+			return
+		}
+
+		const user = interaction.options.getMember("user", true)
+		if (!user) {
+			await interaction.reply({
+				content: "User not found in this server.",
+				ephemeral: true
+			})
+			return
+		}
+
+		const channel = await interaction.options.getChannel("channel", true)
+		if (channel.type !== ChannelType.PrivateThread) {
+			await interaction.reply({
+				content: "Channel must be a private thread.",
+				ephemeral: true
+			})
+			return
+		}
+
+		const teamRole = interaction.options.getRole("team", true)
+		user.addRole(teamRole.id, "Promoted trial mod to team role").catch(() => { })
+
+		await channel.send(`Congrats <@${user.user.id}> on passing trial! You've been added to <@&${teamRole.id}>.`)
+
+		await interaction.reply({
+			content: `Promoted <@${user.user.id}> and added <@&${teamRole.id}>. Message sent in <#${channel.id}>.`,
+			ephemeral: true
+		})
+	}
+}
 
 export class AutomodBypassToggle extends BaseCommand {
 	name = "automod-bypass-toggle"
