@@ -1,11 +1,7 @@
 import { Client } from "@buape/carbon"
 import { createHandler } from "@buape/carbon/adapters/fetch"
-import {
-	CloudflareGatewayDurableObject,
-	CloudflareGatewayPlugin
-} from "@buape/carbon/cloudflare-gateway"
-import { GatewayIntents } from "@buape/carbon/gateway"
 import AdminCommand from "./commands/admin.js"
+import ClaimCommand from "./commands/claim.js"
 import GithubCommand from "./commands/github.js"
 import HelperRootCommand from "./commands/helper.js"
 import RoleCommand from "./commands/role.js"
@@ -16,18 +12,9 @@ import AutoPublishMessageCreate from "./events/autoPublishMessageCreate.js"
 import Ready from "./events/ready.js"
 import ThreadCreateWelcome from "./events/threadCreateWelcome.js"
 import { hydrateRuntimeEnv, type HermitEnv } from "./runtime/env.js"
+import { registerClaimRoutes } from "./server/claimServer.js"
 import { registerHelperLogsRoutes } from "./server/helperLogsServer.js"
 import { runThreadLengthMonitor } from "./services/threadLengthMonitor.js"
-
-const gateway = new CloudflareGatewayPlugin({
-	intents:
-		GatewayIntents.Guilds |
-		GatewayIntents.GuildMessages |
-		GatewayIntents.MessageContent |
-		GatewayIntents.AutoModerationExecution,
-	autoInteractions: false,
-	durableObjectName: "hermit-main-v2"
-})
 
 export const client = new Client(
 	{
@@ -46,6 +33,7 @@ export const client = new Client(
 			new SayRootCommand(),
 			new RoleCommand(),
 			new HelperRootCommand(),
+			new ClaimCommand(),
 			new AdminCommand()
 		],
 		listeners: [
@@ -54,15 +42,13 @@ export const client = new Client(
 			new ThreadCreateWelcome(),
 			new Ready()
 		]
-	},
-	[gateway]
+	}
 )
 
+registerClaimRoutes(client)
 registerHelperLogsRoutes(client)
 
 const handler = createHandler(client)
-
-export { CloudflareGatewayDurableObject }
 
 export default {
 	fetch(request: Request, env: HermitEnv, ctx: ExecutionContext) {
@@ -91,6 +77,10 @@ declare global {
 			HELPER_THREAD_WELCOME_PARENT_ID?: string;
 			HELPER_THREAD_WELCOME_TEMPLATE?: string;
 			THREAD_LENGTH_CHECK_INTERVAL_HOURS?: string;
+			DISCORD_CLIENT_SECRET?: string;
+			CLAIM_STATE_SECRET?: string;
+			CLAWTRIBUTORS_ROLE_ID?: string;
+			GITHUB_TOKEN?: string;
 		}
 	}
 }

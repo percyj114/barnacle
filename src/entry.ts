@@ -1,5 +1,3 @@
-import { CloudflareGatewayDurableObject } from "@buape/carbon/cloudflare-gateway"
-
 const hydrateProcessEnv = (env: Env) => {
 	if (typeof process === "undefined") {
 		Reflect.set(globalThis, "process", { env })
@@ -12,8 +10,6 @@ const hydrateProcessEnv = (env: Env) => {
 		}
 	}
 }
-
-export { CloudflareGatewayDurableObject }
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
