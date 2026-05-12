@@ -11,6 +11,16 @@
     "nodejs_compat",
     "nodejs_compat_populate_process_env"
   ],
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CloudflareGatewayDurableObject"]
+    },
+    {
+      "tag": "v2",
+      "deleted_classes": ["CloudflareGatewayDurableObject"]
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
