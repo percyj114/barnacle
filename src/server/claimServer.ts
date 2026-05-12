@@ -4,11 +4,14 @@ import {
 	ButtonStyle,
 	type Client,
 	type ComponentData,
+	ComponentType,
 	Container,
 	Label,
+	MessageFlags,
 	Modal,
 	type ModalInteraction,
 	Row,
+	Routes,
 	Separator,
 	TextDisplay,
 	TextInput,
@@ -116,6 +119,38 @@ class ClaimReviewAcceptButton extends Button {
 			return
 		}
 
+		const currentComponents = structuredClone(
+			interaction.message?.rawData.components ?? []
+		)
+		const currentContainer = currentComponents.find(
+			(component) => component.type === ComponentType.Container
+		)
+		const currentContainerComponents =
+			currentContainer && "components" in currentContainer
+				? currentContainer.components
+				: []
+		const currentButtonRow = currentContainerComponents.find(
+			(component) => component.type === ComponentType.ActionRow
+		)
+		const alreadyLocked =
+			currentButtonRow &&
+			"components" in currentButtonRow &&
+			currentButtonRow.components.every((component) => component.disabled)
+		if (alreadyLocked) {
+			await interaction.reply({
+				components: [
+					new Container(
+						[
+							new TextDisplay("### Claim already being handled"),
+							new TextDisplay("This claim request has already been accepted, rejected, or locked for review.")
+						],
+						{ accentColor: "#f1c40f" }
+					)
+				]
+			})
+			return
+		}
+
 		const roleResponse = await fetch(
 			`${discordApiBase}/guilds/${guildId}/members/${userId}/roles/${clawtributorsRoleId}`,
 			{
@@ -156,14 +191,57 @@ class ClaimReviewAcceptButton extends Button {
 			]
 		}).catch(() => null)
 
-		await interaction.update({
+		if (interaction.message?.channelId && interaction.message.id) {
+			await interaction.client.rest.patch(
+				Routes.channelMessage(
+					interaction.message.channelId,
+					interaction.message.id
+				),
+				{
+					body: {
+						components: currentComponents.map((component) =>
+							component.type === ComponentType.Container &&
+								"components" in component
+								? {
+									...component,
+									accent_color: 4176208,
+									components: [
+										...component.components.map((child) =>
+											child.type === ComponentType.ActionRow &&
+												"components" in child
+												? {
+													...child,
+													components: child.components.map((button) => ({
+														...button,
+														disabled: true
+													}))
+												}
+												: child
+										),
+										new Separator({
+											divider: true,
+											spacing: "small"
+										}).serialize(),
+										new TextDisplay(
+											`Accepted by <@${interaction.user?.id ?? "unknown"}>. <@${userId}> has been given <@&${clawtributorsRoleId}>.`
+										).serialize()
+									]
+								}
+								: component
+						),
+						flags: MessageFlags.IsComponentsV2,
+						allowed_mentions: { parse: [] }
+					}
+				}
+			)
+		}
+
+		await interaction.reply({
 			components: [
 				new Container(
 					[
-						new TextDisplay("### Clawtributor Claim Accepted"),
-						new TextDisplay(
-							`Accepted by <@${interaction.user?.id ?? "unknown"}>. <@${userId}> has been given <@&${clawtributorsRoleId}>.`
-						)
+						new TextDisplay("### Claim accepted"),
+						new TextDisplay(`<@${userId}> has been given the role.`)
 					],
 					{ accentColor: "#3fb950" }
 				)
@@ -209,6 +287,82 @@ class ClaimReviewRejectButton extends Button {
 				]
 			})
 			return
+		}
+
+		const currentComponents = structuredClone(
+			interaction.message?.rawData.components ?? []
+		)
+		const currentContainer = currentComponents.find(
+			(component) => component.type === ComponentType.Container
+		)
+		const currentContainerComponents =
+			currentContainer && "components" in currentContainer
+				? currentContainer.components
+				: []
+		const currentButtonRow = currentContainerComponents.find(
+			(component) => component.type === ComponentType.ActionRow
+		)
+		const alreadyLocked =
+			currentButtonRow &&
+			"components" in currentButtonRow &&
+			currentButtonRow.components.every((component) => component.disabled)
+		if (alreadyLocked) {
+			await interaction.reply({
+				components: [
+					new Container(
+						[
+							new TextDisplay("### Claim already being handled"),
+							new TextDisplay("Someone is already handling this claim request.")
+						],
+						{ accentColor: "#f1c40f" }
+					)
+				]
+			})
+			return
+		}
+
+		if (interaction.message?.channelId && interaction.message.id) {
+			await interaction.client.rest.patch(
+				Routes.channelMessage(
+					interaction.message.channelId,
+					interaction.message.id
+				),
+				{
+					body: {
+						components: currentComponents.map((component) =>
+							component.type === ComponentType.Container &&
+								"components" in component
+								? {
+									...component,
+									components: [
+										...component.components.map((child) =>
+											child.type === ComponentType.ActionRow &&
+												"components" in child
+												? {
+													...child,
+													components: child.components.map((button) => ({
+														...button,
+														disabled: true
+													}))
+												}
+												: child
+										),
+										new Separator({
+											divider: true,
+											spacing: "small"
+										}).serialize(),
+										new TextDisplay(
+											`Rejection in progress by <@${interaction.user?.id ?? "unknown"}>.`
+										).serialize()
+									]
+								}
+								: component
+						),
+						flags: MessageFlags.IsComponentsV2,
+						allowed_mentions: { parse: [] }
+					}
+				}
+			)
 		}
 
 		await interaction.showModal(new ClaimReviewRejectModal(userId, guildId))
@@ -283,20 +437,56 @@ class ClaimReviewRejectModal extends Modal {
 			]
 		}).catch(() => null)
 
-		await interaction.update({
+		if (interaction.message?.channelId && interaction.message.id) {
+			const currentComponents = structuredClone(
+				interaction.message.rawData.components ?? []
+			)
+			await interaction.client.rest.patch(
+				Routes.channelMessage(
+					interaction.message.channelId,
+					interaction.message.id
+				),
+				{
+					body: {
+						components: currentComponents.map((component) =>
+							component.type === ComponentType.Container &&
+								"components" in component
+								? {
+									...component,
+									accent_color: 16273737,
+									components: [
+										...component.components,
+										new Separator({
+											divider: true,
+											spacing: "small"
+										}).serialize(),
+										new TextDisplay(
+											reason
+												? `Rejected by <@${interaction.user?.id ?? "unknown"}>.\n\nReason: ${reason}`
+												: `Rejected by <@${interaction.user?.id ?? "unknown"}>.`
+										).serialize()
+									]
+								}
+								: component
+						),
+						flags: MessageFlags.IsComponentsV2,
+						allowed_mentions: { parse: [] }
+					}
+				}
+			)
+		}
+
+		await interaction.reply({
 			components: [
 				new Container(
 					[
-						new TextDisplay("### Clawtributor Claim Rejected"),
-						new TextDisplay(
-							reason
-								? `Rejected by <@${interaction.user?.id ?? "unknown"}>.\n\nReason: ${reason}`
-								: `Rejected by <@${interaction.user?.id ?? "unknown"}>.`
-						)
+						new TextDisplay("### Claim rejected"),
+						new TextDisplay(`Rejection sent to <@${userId}>.`)
 					],
 					{ accentColor: "#f85149" }
 				)
 			],
+			ephemeral: true,
 			allowedMentions: { parse: [] }
 		})
 	}
