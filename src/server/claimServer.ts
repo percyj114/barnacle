@@ -26,12 +26,12 @@ const reasonInputId = "claim-review-reason"
 
 export const createClaimUrl = async (userId: string, guildId: string) => {
 	const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-	const secret = process.env.CLAIM_STATE_SECRET ?? process.env.DEPLOY_SECRET
+	const secret = process.env.DEPLOY_SECRET
 	if (!baseUrl) {
 		throw new Error("BASE_URL is required")
 	}
 	if (!secret) {
-		throw new Error("CLAIM_STATE_SECRET or DEPLOY_SECRET is required")
+		throw new Error("DEPLOY_SECRET is required")
 	}
 
 	const payloadBytes = new TextEncoder().encode(
@@ -116,9 +116,8 @@ class ClaimReviewAcceptButton extends Button {
 			return
 		}
 
-		const roleId = process.env.CLAWTRIBUTORS_ROLE_ID ?? clawtributorsRoleId
 		const roleResponse = await fetch(
-			`${discordApiBase}/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+			`${discordApiBase}/guilds/${guildId}/members/${userId}/roles/${clawtributorsRoleId}`,
 			{
 				method: "PUT",
 				headers: {
@@ -163,7 +162,7 @@ class ClaimReviewAcceptButton extends Button {
 					[
 						new TextDisplay("### Clawtributor Claim Accepted"),
 						new TextDisplay(
-							`Accepted by <@${interaction.user?.id ?? "unknown"}>. <@${userId}> has been given <@&${roleId}>.`
+							`Accepted by <@${interaction.user?.id ?? "unknown"}>. <@${userId}> has been given <@&${clawtributorsRoleId}>.`
 						)
 					],
 					{ accentColor: "#3fb950" }
@@ -308,7 +307,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 	const state = url.searchParams.get("state")
 	const code = url.searchParams.get("code")
 	const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-	const secret = process.env.CLAIM_STATE_SECRET ?? process.env.DEPLOY_SECRET
+	const secret = process.env.DEPLOY_SECRET
 	const render = (title: string, message: string, status = 200) =>
 		new Response(
 			`<!doctype html>
@@ -342,7 +341,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 		throw new Error("BASE_URL is required")
 	}
 	if (!secret) {
-		throw new Error("CLAIM_STATE_SECRET or DEPLOY_SECRET is required")
+		throw new Error("DEPLOY_SECRET is required")
 	}
 
 	const [encodedPayload, stateSignature] = state.split(".")
@@ -464,9 +463,6 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 		Accept: "application/vnd.github+json",
 		"User-Agent": "hermit"
 	}
-	if (process.env.GITHUB_TOKEN) {
-		githubHeaders.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
-	}
 	const githubSummaries = (
 		await Promise.all(
 			githubUsernames.map(async (username) => {
@@ -531,7 +527,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 	}
 
 	const channel = await client
-		.fetchChannel(process.env.CLAIM_REVIEW_CHANNEL_ID ?? claimReviewChannelId)
+		.fetchChannel(claimReviewChannelId)
 		.catch(() => null)
 	if (!channel || !("send" in channel)) {
 		return render(
@@ -541,7 +537,6 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 		)
 	}
 
-	const reviewRoleId = process.env.CLAIM_REVIEW_ROLE_ID ?? claimReviewRoleId
 	const recentPullRequests =
 		qualifyingSummary.recentPullRequests.length > 0
 			? qualifyingSummary.recentPullRequests
@@ -567,7 +562,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 		components: [
 			new Container(
 				[
-					new TextDisplay(`<@&${reviewRoleId}>`),
+					new TextDisplay(`<@&${claimReviewRoleId}>`),
 					new TextDisplay("### Clawtributor Claim Request"),
 					new TextDisplay(
 						`- User: <@${payload.userId}>\n- ID: ${payload.userId}\n- GitHub: [@${qualifyingSummary.username}](<https://github.com/${qualifyingSummary.username}>)\n- Merged PRs: **${qualifyingSummary.totalCount}**`
@@ -585,7 +580,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 			)
 		],
 		allowedMentions: {
-			roles: [reviewRoleId],
+			roles: [claimReviewRoleId],
 			users: []
 		}
 	})
@@ -615,7 +610,7 @@ export const registerClaimRoutes = (client: Client) => {
 			handler: async (request) => {
 				const state = new URL(request.url).searchParams.get("state")
 				const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-				const secret = process.env.CLAIM_STATE_SECRET ?? process.env.DEPLOY_SECRET
+				const secret = process.env.DEPLOY_SECRET
 				let validState = false
 				if (state && secret) {
 					const [encodedPayload, stateSignature] = state.split(".")

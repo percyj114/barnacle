@@ -84,11 +84,6 @@ declare global {
 			HELPER_THREAD_WELCOME_TEMPLATE?: string;
 			THREAD_LENGTH_CHECK_INTERVAL_HOURS?: string;
 			DISCORD_CLIENT_SECRET?: string;
-			CLAIM_STATE_SECRET?: string;
-			CLAWTRIBUTORS_ROLE_ID?: string;
-			CLAIM_REVIEW_ROLE_ID?: string;
-			CLAIM_REVIEW_CHANNEL_ID?: string;
-			GITHUB_TOKEN?: string;
 		}
 	}
 }
