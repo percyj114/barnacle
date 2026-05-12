@@ -12,7 +12,11 @@ import AutoPublishMessageCreate from "./events/autoPublishMessageCreate.js"
 import Ready from "./events/ready.js"
 import ThreadCreateWelcome from "./events/threadCreateWelcome.js"
 import { hydrateRuntimeEnv, type HermitEnv } from "./runtime/env.js"
-import { registerClaimRoutes } from "./server/claimServer.js"
+import {
+	claimReviewComponents,
+	claimReviewModals,
+	registerClaimRoutes
+} from "./server/claimServer.js"
 import { registerHelperLogsRoutes } from "./server/helperLogsServer.js"
 import { runThreadLengthMonitor } from "./services/threadLengthMonitor.js"
 
@@ -41,7 +45,9 @@ export const client = new Client(
 			new AutoPublishMessageCreate(),
 			new ThreadCreateWelcome(),
 			new Ready()
-		]
+		],
+		components: claimReviewComponents,
+		modals: claimReviewModals
 	}
 )
 
@@ -80,6 +86,8 @@ declare global {
 			DISCORD_CLIENT_SECRET?: string;
 			CLAIM_STATE_SECRET?: string;
 			CLAWTRIBUTORS_ROLE_ID?: string;
+			CLAIM_REVIEW_ROLE_ID?: string;
+			CLAIM_REVIEW_CHANNEL_ID?: string;
 			GITHUB_TOKEN?: string;
 		}
 	}
