@@ -21,6 +21,7 @@ import {
 const clawtributorsRoleId = "1458375944111915051"
 const claimReviewRoleId = "1460436814627078433"
 const claimReviewChannelId = "1503772785120383057"
+const clawtributorsAnnouncementChannelId = "1458141495701012561"
 const githubOwner = "openclaw"
 const githubRepo = "openclaw"
 const discordApiBase = "https://discord.com/api/v10"
@@ -190,6 +191,22 @@ class ClaimReviewAcceptButton extends Button {
 				)
 			]
 		}).catch(() => null)
+
+		const announcementChannel = await interaction.client
+			.fetchChannel(clawtributorsAnnouncementChannelId)
+			.catch(() => null)
+		if (announcementChannel && "send" in announcementChannel) {
+			await announcementChannel.send({
+				components: [
+					new Container([
+						new TextDisplay(
+							`<@${userId}> has been given the <@&${clawtributorsRoleId}> role`
+						)
+					])
+				],
+				allowedMentions: { parse: [] }
+			})
+		}
 
 		if (interaction.message?.channelId && interaction.message.id) {
 			await interaction.client.rest.patch(
