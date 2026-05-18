@@ -1,6 +1,7 @@
 import {
 	ChannelType,
 	MessageCreateListener,
+	MessageFlags,
 	OverwriteType,
 	PermissionFlagsBits,
 	type APIChannel,
@@ -12,25 +13,7 @@ import {
 import { getOrCreateChannelWebhook, sendWebhookMessage } from "../utils/channelWebhook.js"
 
 const gifLinkDomains = new Set(["tenor.com", "klipy.com"])
-const gifRepostLogChannelId = "1464886408090226902"
 const urlRegex = /https?:\/\/[^\s<>()]+/gi
-
-const logGifRepost = async (
-	client: Client,
-	message: string,
-	data: ListenerEventData["MESSAGE_CREATE"]
-) => {
-	const content =
-		`[gif-repost] ${message} message=${data.id} channel=${data.channel_id ?? "unknown"} guild=${data.guild_id ?? "dm"} author=${data.author.id}`
-	await client.rest
-		.post(Routes.channelMessages(gifRepostLogChannelId), {
-			body: {
-				content: content.slice(0, 2000),
-				allowed_mentions: { parse: [] }
-			}
-		})
-		.catch(() => {})
-}
 
 const trimUrl = (url: string) => url.replace(/[.,!?;:]+$/, "")
 const hasPermission = (permissions: bigint, permission: bigint) =>
@@ -76,7 +59,7 @@ const canEmbedLinksInChannel = async (
 	data: ListenerEventData["MESSAGE_CREATE"]
 ) => {
 	if (!data.guild_id || !data.rawMember) {
-		return { canEmbed: true, reason: "missing-guild-or-member" }
+		return true
 	}
 
 	const [roles, channel] = await Promise.all([
@@ -90,7 +73,7 @@ const canEmbedLinksInChannel = async (
 	}
 
 	if (hasPermission(permissions, PermissionFlagsBits.Administrator)) {
-		return { canEmbed: true, reason: "administrator" }
+		return true
 	}
 
 	const permissionChannel = await getPermissionChannel(client, channel)
@@ -129,57 +112,33 @@ const canEmbedLinksInChannel = async (
 		permissions = applyOverwrite(permissions, memberOverwrite.allow, memberOverwrite.deny)
 	}
 
-	return {
-		canEmbed: hasPermission(permissions, PermissionFlagsBits.EmbedLinks),
-		reason: `effective-permissions channel=${permissionChannel.id}`
-	}
+	return hasPermission(permissions, PermissionFlagsBits.EmbedLinks)
 }
 
 export default class GifRepostMessageCreate extends MessageCreateListener {
 	async handle(data: ListenerEventData[this["type"]], client: Client) {
-		if (!data.channel_id) {
+		if (!data.channel_id || data.webhook_id || data.author.bot) {
 			return
 		}
-		if (data.webhook_id || data.author.bot) {
-			return
-		}
-
-		await logGifRepost(
-			client,
-			`received contentLength=${data.content.length} attachments=${data.attachments?.length ?? 0} embeds=${data.embeds?.length ?? 0}`,
-			data
-		)
 
 		const gifLink = findGifLink(data.content)
 		if (!gifLink) {
-			if ((data.attachments?.length ?? 0) > 0 || (data.embeds?.length ?? 0) > 0) {
-				await logGifRepost(
-					client,
-					`skip no-supported-link contentLength=${data.content.length} attachments=${data.attachments?.length ?? 0} embeds=${data.embeds?.length ?? 0}`,
-					data
-				)
-			}
 			return
 		}
 
-		await logGifRepost(client, `matched link=${gifLink}`, data)
-
 		try {
-			const embedPermission = await canEmbedLinksInChannel(client, data)
-			await logGifRepost(
-				client,
-				`permission canEmbed=${embedPermission.canEmbed} reason=${embedPermission.reason}`,
-				data
-			)
-			if (embedPermission.canEmbed) {
-				await logGifRepost(client, "skip user-can-embed", data)
+			if (await canEmbedLinksInChannel(client, data)) {
 				return
 			}
 
 			const webhook = await getOrCreateChannelWebhook(client, data.channel_id)
-			await logGifRepost(client, "delete-original", data)
-			await client.rest.delete(Routes.channelMessage(data.channel_id, data.id))
-			await logGifRepost(client, "send-webhook", data)
+			if (data.content.trim() === gifLink) {
+				await client.rest.delete(Routes.channelMessage(data.channel_id, data.id))
+			} else {
+				await client.rest.patch(Routes.channelMessage(data.channel_id, data.id), {
+					body: { flags: (data.flags ?? 0) | MessageFlags.SuppressEmbeds }
+				})
+			}
 			await sendWebhookMessage(webhook, {
 				content: gifLink,
 				username:
@@ -189,13 +148,8 @@ export default class GifRepostMessageCreate extends MessageCreateListener {
 					data.author.id,
 				avatar_url: data.member?.avatarUrl || data.author.avatarUrl || undefined
 			})
-			await logGifRepost(client, "reposted", data)
 		} catch (error) {
-			await logGifRepost(
-				client,
-				`failed error=${error instanceof Error ? error.message : String(error)}`,
-				data
-			)
+			console.error("Failed to repost GIF link:", error)
 		}
 	}
 }
