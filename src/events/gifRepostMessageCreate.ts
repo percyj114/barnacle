@@ -12,7 +12,7 @@ import {
 } from "@buape/carbon"
 import { getOrCreateChannelWebhook, sendWebhookMessage } from "../utils/channelWebhook.js"
 
-const gifLinkDomains = new Set(["tenor.com", "klipy.com"])
+const gifLinkDomains = new Set(["tenor.com", "klipy.com", "giphy.com"])
 const urlRegex = /https?:\/\/[^\s<>()]+/gi
 
 const trimUrl = (url: string) => url.replace(/[.,!?;:]+$/, "")
