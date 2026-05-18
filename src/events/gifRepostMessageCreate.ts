@@ -1,5 +1,10 @@
 import {
+	ChannelType,
 	MessageCreateListener,
+	OverwriteType,
+	PermissionFlagsBits,
+	type APIChannel,
+	type APIRole,
 	type Client,
 	type ListenerEventData,
 	Routes
@@ -10,6 +15,8 @@ const gifLinkDomains = new Set(["tenor.com", "klipy.com"])
 const urlRegex = /https?:\/\/[^\s<>()]+/gi
 
 const trimUrl = (url: string) => url.replace(/[.,!?;:]+$/, "")
+const hasPermission = (permissions: bigint, permission: bigint) =>
+	(permissions & permission) === permission
 
 const findGifLink = (content: string) => {
 	for (const match of content.matchAll(urlRegex)) {
@@ -27,6 +34,86 @@ const findGifLink = (content: string) => {
 	return null
 }
 
+const fetchChannel = async (client: Client, channelId: string) =>
+	(await client.rest.get(Routes.channel(channelId))) as APIChannel
+
+const getPermissionChannel = async (client: Client, channel: APIChannel) => {
+	if (
+		(channel.type === ChannelType.AnnouncementThread ||
+			channel.type === ChannelType.PublicThread ||
+			channel.type === ChannelType.PrivateThread) &&
+		"parent_id" in channel &&
+		channel.parent_id
+	) {
+		return fetchChannel(client, channel.parent_id)
+	}
+	return channel
+}
+
+const applyOverwrite = (permissions: bigint, allow: string, deny: string) =>
+	(permissions & ~BigInt(deny)) | BigInt(allow)
+
+const canEmbedLinksInChannel = async (
+	client: Client,
+	data: ListenerEventData["MESSAGE_CREATE"]
+) => {
+	if (!data.guild_id || !data.rawMember) {
+		return true
+	}
+
+	const [roles, channel] = await Promise.all([
+		client.rest.get(Routes.guildRoles(data.guild_id)) as Promise<APIRole[]>,
+		fetchChannel(client, data.channel_id)
+	])
+	const roleMap = new Map(roles.map((role) => [role.id, BigInt(role.permissions)]))
+	let permissions = roleMap.get(data.guild_id) ?? 0n
+	for (const roleId of data.rawMember.roles) {
+		permissions |= roleMap.get(roleId) ?? 0n
+	}
+
+	if (hasPermission(permissions, PermissionFlagsBits.Administrator)) {
+		return true
+	}
+
+	const permissionChannel = await getPermissionChannel(client, channel)
+	const overwrites =
+		"permission_overwrites" in permissionChannel
+			? permissionChannel.permission_overwrites ?? []
+			: []
+	const everyoneOverwrite = overwrites.find(
+		(overwrite) => overwrite.type === OverwriteType.Role && overwrite.id === data.guild_id
+	)
+	if (everyoneOverwrite) {
+		permissions = applyOverwrite(
+			permissions,
+			everyoneOverwrite.allow,
+			everyoneOverwrite.deny
+		)
+	}
+
+	let roleAllow = 0n
+	let roleDeny = 0n
+	for (const overwrite of overwrites) {
+		if (
+			overwrite.type === OverwriteType.Role &&
+			data.rawMember.roles.includes(overwrite.id)
+		) {
+			roleAllow |= BigInt(overwrite.allow)
+			roleDeny |= BigInt(overwrite.deny)
+		}
+	}
+	permissions = (permissions & ~roleDeny) | roleAllow
+
+	const memberOverwrite = overwrites.find(
+		(overwrite) => overwrite.type === OverwriteType.Member && overwrite.id === data.author.id
+	)
+	if (memberOverwrite) {
+		permissions = applyOverwrite(permissions, memberOverwrite.allow, memberOverwrite.deny)
+	}
+
+	return hasPermission(permissions, PermissionFlagsBits.EmbedLinks)
+}
+
 export default class GifRepostMessageCreate extends MessageCreateListener {
 	async handle(data: ListenerEventData[this["type"]], client: Client) {
 		if (!data.channel_id || data.webhook_id || data.author.bot) {
@@ -39,6 +126,10 @@ export default class GifRepostMessageCreate extends MessageCreateListener {
 		}
 
 		try {
+			if (await canEmbedLinksInChannel(client, data)) {
+				return
+			}
+
 			const webhook = await getOrCreateChannelWebhook(client, data.channel_id)
 			await client.rest.delete(Routes.channelMessage(data.channel_id, data.id))
 			await sendWebhookMessage(webhook, {
