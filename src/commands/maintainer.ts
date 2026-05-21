@@ -22,6 +22,7 @@ import {
 	FscRequestNoButton,
 	FscRequestYesButton
 } from "../components/fscRequestButtons.js"
+import { WhoisDeleteButton } from "../components/whoisDeleteButton.js"
 import {
 	addFscUserToChannel,
 	buildFscContainer,
@@ -274,7 +275,10 @@ export class MaintainerWhois extends BaseCommand {
 						new Container([
 							new TextDisplay(`## <@${user.id}>'s introduction post\n\n${snippet}`),
 							new Separator({ divider: true, spacing: "small" }),
-							new Row([new JumpToIntroductionButton(postUrl)])
+							new Row([
+								new JumpToIntroductionButton(postUrl),
+								new WhoisDeleteButton(interaction.user?.id ?? interaction.userId ?? shadowUserId)
+							])
 						])
 					],
 					allowedMentions: { parse: [] }

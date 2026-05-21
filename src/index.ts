@@ -15,6 +15,7 @@ import GithubSummaryReactionAdd from "./events/githubSummaryReactionAdd.js"
 import Ready from "./events/ready.js"
 import ThreadCreateWelcome from "./events/threadCreateWelcome.js"
 import { fscRequestComponents } from "./components/fscRequestButtons.js"
+import { whoisDeleteComponents } from "./components/whoisDeleteButton.js"
 import { hydrateRuntimeEnv, type HermitEnv } from "./runtime/env.js"
 import {
 	claimReviewComponents,
@@ -56,7 +57,11 @@ export const client = new Client(
 			new ThreadCreateWelcome(),
 			new Ready()
 		],
-		components: [...claimReviewComponents, ...fscRequestComponents],
+		components: [
+			...claimReviewComponents,
+			...fscRequestComponents,
+			...whoisDeleteComponents
+		],
 		modals: claimReviewModals
 	}
 )
