@@ -6,7 +6,7 @@ import {
 import {
 	buildGitHubSummaryContainer,
 	fetchGitHubSummaryData,
-	parseGitHubIssueUrl
+	parseGitHubIssueUrls
 } from "../utils/githubSummary.js"
 
 const summaryEmojiId = "1478966151743672563"
@@ -28,24 +28,24 @@ export default class GithubSummaryReactionAdd extends MessageReactionAddListener
 		]
 			.filter(Boolean)
 			.join("\n")
-		const match = parseGitHubIssueUrl(source)
-		if (!match) {
+		const matches = parseGitHubIssueUrls(source)
+		if (matches.length === 0) {
 			return
 		}
 
-		const summary = await fetchGitHubSummaryData(
-			match.owner,
-			match.repo,
-			match.number
-		).catch(() => null)
-		if (!summary) {
+		const summaries = (await Promise.all(
+			matches.map((match) =>
+				fetchGitHubSummaryData(match.owner, match.repo, match.number).catch(() => null)
+			)
+		)).filter((summary) => summary !== null)
+		if (summaries.length === 0) {
 			return
 		}
 
 		const channel = await client.fetchChannel(data.channel_id)
 		if (channel && "send" in channel) {
 			await channel.send({
-				components: [buildGitHubSummaryContainer(summary)]
+				components: summaries.map(buildGitHubSummaryContainer)
 			})
 		}
 	}

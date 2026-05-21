@@ -128,6 +128,24 @@ export const parseGitHubIssueUrl = (content: string) => {
 	}
 }
 
+export const parseGitHubIssueUrls = (content: string) => {
+	const seen = new Set<string>()
+	return [...content.matchAll(githubIssueUrlRegex)]
+		.map((match) => ({
+			owner: match[1],
+			repo: match[2],
+			number: Number(match[3])
+		}))
+		.filter((match) => {
+			const key = `${match.owner}/${match.repo}#${match.number}`.toLowerCase()
+			if (seen.has(key)) {
+				return false
+			}
+			seen.add(key)
+			return true
+		})
+}
+
 export const getImportantGitHubLabels = (labels: string[]) => {
 	const important = labels.filter(
 		(label) =>
