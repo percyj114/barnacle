@@ -13,12 +13,27 @@ import {
 
 const summaryEmojiId = "1506891196436316261"
 const deleteHint = "-# React with :x: to remove this message"
+const issueNumberRegex = /#(\d{1,6})\b/g
 
 const reactionRouteEmoji = (emoji: ListenerEventData["MESSAGE_REACTION_ADD"]["emoji"]) =>
 	encodeURIComponent(emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name ?? "")
 
 const hasDeleteHint = (components: unknown) =>
 	JSON.stringify(components).includes(deleteHint)
+
+const parseOpenClawPrNumbers = (content: string) => {
+	const seen = new Set<number>()
+	return [...content.matchAll(issueNumberRegex)]
+		.map((match) => Number(match[1]))
+		.filter((number) => {
+			if (seen.has(number)) {
+				return false
+			}
+			seen.add(number)
+			return true
+		})
+		.map((number) => ({ owner: "openclaw", repo: "openclaw", type: "pull", number }))
+}
 
 export default class GithubSummaryReactionAdd extends MessageReactionAddListener {
 	async handle(data: ListenerEventData[this["type"]], client: Client) {
@@ -58,12 +73,14 @@ export default class GithubSummaryReactionAdd extends MessageReactionAddListener
 			]
 				.filter(Boolean)
 				.join("\n")
-			const matches = parseGitHubIssueUrls(source)
-				.filter((match) => {
+			const linkMatches = parseGitHubIssueUrls(source)
+			const matches = (linkMatches.length > 0
+				? linkMatches.filter((match) => {
 					// Temporarily skip issues in reaction summaries.
 					// return true
 					return match.type === "pull"
 				})
+				: parseOpenClawPrNumbers(source))
 				.slice(0, 5)
 			if (matches.length === 0) {
 				return
