@@ -9,6 +9,7 @@ import {
 	CommandWithSubcommands,
 	Container,
 	InteractionContextType,
+	LinkButton,
 	Row,
 	Routes,
 	Separator,
@@ -51,8 +52,11 @@ const fscAddUserOptions = [
 	}
 ]
 
+const hasMaintainerRole = (interaction: CommandInteraction) =>
+	interaction.member?.roles.some((role) => role.id === maintainerRoleId) ?? false
+
 const maintainerRolePreCheck = async (interaction: CommandInteraction) => {
-	if (interaction.member?.roles.some((role) => role.id === maintainerRoleId)) {
+	if (hasMaintainerRole(interaction)) {
 		return true
 	}
 
@@ -62,9 +66,20 @@ const maintainerRolePreCheck = async (interaction: CommandInteraction) => {
 				`You need <@&${maintainerRoleId}> to use this command.`
 			], "#f85149")
 		],
+		ephemeral: true,
 		allowedMentions: { parse: [] }
 	})
 	return false
+}
+
+class JumpToIntroductionButton extends LinkButton {
+	label = "Jump to post"
+	url: string
+
+	constructor(url: string) {
+		super()
+		this.url = url
+	}
 }
 
 class PromptButton extends Button {
@@ -225,8 +240,8 @@ export class MaintainerFscRequestChannel extends BaseCommand {
 
 export class MaintainerWhois extends BaseCommand {
 	name = "whois"
-	description = "Find a user's Fake Slack Connect whois post"
-	ephemeral = true
+	description = "Find a user's introduction post"
+	ephemeral = (interaction: CommandInteraction) => !hasMaintainerRole(interaction)
 	preCheck = maintainerRolePreCheck
 
 	options = [
@@ -250,11 +265,17 @@ export class MaintainerWhois extends BaseCommand {
 
 			const match = messages.find((message) => message.author.id === user.id)
 			if (match) {
+				const postUrl = `https://discord.com/channels/${whoisGuildId}/${whoisChannelId}/${match.id}`
+				const content = match.content.trim() || "No text content."
+				const snippet = content.length > 1000 ? `${content.slice(0, 999)}…` : content
+
 				await interaction.reply({
 					components: [
-						buildFscContainer("Whois post found", [
-							`<@${user.id}>: https://discord.com/channels/${whoisGuildId}/${whoisChannelId}/${match.id}`
-						], "#3fb950")
+						new Container([
+							new TextDisplay(`## <@${user.id}>'s introduction post\n\n${snippet}`),
+							new Separator({ divider: true, spacing: "small" }),
+							new Row([new JumpToIntroductionButton(postUrl)])
+						])
 					],
 					allowedMentions: { parse: [] }
 				})
@@ -268,7 +289,7 @@ export class MaintainerWhois extends BaseCommand {
 		}
 
 		await interaction.reply({
-			components: [buildFscContainer("No whois post found", [`No message by <@${user.id}> was found in <#${whoisChannelId}>.`], "#f85149")],
+			components: [new Container([new TextDisplay(`No introduction post by <@${user.id}> was found in <#${whoisChannelId}>.`)])],
 			allowedMentions: { parse: [] }
 		})
 	}
