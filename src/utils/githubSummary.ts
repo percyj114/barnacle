@@ -186,17 +186,16 @@ export const parseGitHubIssueUrls = (content: string) => {
 }
 
 export const getImportantGitHubLabels = (labels: string[]) => {
-	const important = labels.filter(
-		(label) =>
-			label.startsWith("size:") ||
-			label.startsWith("rating:") ||
-			label.startsWith("issue-rating:") ||
-			label.startsWith("proof:") ||
-			label.startsWith("status:") ||
-			importantClawsweeperLabels.has(label)
-	)
+	const groups = [
+		labels.filter((label) => label.startsWith("size:")),
+		labels.filter((label) => /^P[0-3]$/.test(label)),
+		labels.filter((label) => label.startsWith("proof:")),
+		labels.filter((label) => label.startsWith("status:")),
+		labels.filter((label) => importantClawsweeperLabels.has(label)),
+		labels.filter((label) => label.startsWith("rating:") || label.startsWith("issue-rating:"))
+	]
 
-	return important.length > 0 ? important : labels.filter((label) => label === "clawsweeper")
+	return groups.flat()
 }
 
 export const fetchGitHubSummaryData = async (
