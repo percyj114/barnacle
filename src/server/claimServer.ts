@@ -24,6 +24,7 @@ import {
 	markClaimRequestSubmitted,
 	recordClaimDecision
 } from "../data/claimRequests.js"
+import { getRuntimeEnv } from "../runtime/env.js"
 
 const clawtributorsRoleId = "1458375944111915051"
 const claimReviewRoleId = "1460436814627078433"
@@ -48,8 +49,9 @@ const existingClaimPageMessage = (status: string) => {
 }
 
 export const createClaimUrl = async (userId: string, guildId: string) => {
-	const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-	const secret = process.env.DEPLOY_SECRET
+	const env = getRuntimeEnv()
+	const baseUrl = env.BASE_URL?.replace(/\/$/, "")
+	const secret = env.DEPLOY_SECRET
 	if (!baseUrl) {
 		throw new Error("BASE_URL is required")
 	}
@@ -176,7 +178,7 @@ class ClaimReviewAcceptButton extends Button {
 			{
 				method: "PUT",
 				headers: {
-					Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+					Authorization: `Bot ${getRuntimeEnv().DISCORD_BOT_TOKEN}`
 				}
 			}
 		)
@@ -555,8 +557,9 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 	const url = new URL(request.url)
 	const state = url.searchParams.get("state")
 	const code = url.searchParams.get("code")
-	const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-	const secret = process.env.DEPLOY_SECRET
+	const env = getRuntimeEnv()
+	const baseUrl = env.BASE_URL?.replace(/\/$/, "")
+	const secret = env.DEPLOY_SECRET
 	const render = (title: string, message: string, status = 200) =>
 		new Response(
 			`<!doctype html>
@@ -669,8 +672,8 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 			"content-type": "application/x-www-form-urlencoded"
 		},
 		body: new URLSearchParams({
-			client_id: process.env.DISCORD_CLIENT_ID,
-			client_secret: process.env.DISCORD_CLIENT_SECRET ?? "",
+			client_id: env.DISCORD_CLIENT_ID,
+			client_secret: env.DISCORD_CLIENT_SECRET ?? "",
 			grant_type: "authorization_code",
 			code,
 			redirect_uri: new URL("/claim/callback", baseUrl).toString()
@@ -914,8 +917,9 @@ export const registerClaimRoutes = (client: Client) => {
 			path: "/claim",
 			handler: async (request) => {
 				const state = new URL(request.url).searchParams.get("state")
-				const baseUrl = process.env.BASE_URL?.replace(/\/$/, "")
-				const secret = process.env.DEPLOY_SECRET
+				const env = getRuntimeEnv()
+				const baseUrl = env.BASE_URL?.replace(/\/$/, "")
+				const secret = env.DEPLOY_SECRET
 				let validState = false
 				if (state && secret) {
 					const [encodedPayload, stateSignature] = state.split(".")
@@ -994,7 +998,7 @@ export const registerClaimRoutes = (client: Client) => {
 				}
 
 				const oauthUrl = new URL(`${discordApiBase}/oauth2/authorize`)
-				oauthUrl.searchParams.set("client_id", process.env.DISCORD_CLIENT_ID)
+				oauthUrl.searchParams.set("client_id", env.DISCORD_CLIENT_ID)
 				oauthUrl.searchParams.set(
 					"redirect_uri",
 					new URL("/claim/callback", baseUrl).toString()
