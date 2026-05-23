@@ -8,6 +8,8 @@ const discordApiBase = "https://discord.com/api/v10"
 const githubApiBase = "https://api.github.com"
 const noListedReason = "No listed reason found."
 const notAvailable = "Not available"
+const discordAuditBanAdd = 22
+const discordAuditMemberUpdate = 24
 
 const getDiscordHeaders = () => ({
 	Authorization: `Bot ${getRuntimeEnv().DISCORD_BOT_TOKEN}`,
@@ -19,6 +21,68 @@ const fetchDiscord = async <T>(path: string) => {
 		headers: getDiscordHeaders()
 	})
 	return response.ok ? { status: response.status, data: await response.json() as T } : { status: response.status, data: null }
+}
+
+const parseBarnacleReason = (reason?: string | null) => {
+	if (!reason) {
+		return {}
+	}
+	const ban = reason.match(/^\[(?<caseId>[^\]]+)]\s+(?<timestamp>\d{2}\/\d{2}\/\d{4}\s+-\s+\d{2}:\d{2})\s+@(?<moderator>\S+)\s+\((?<duration>[^)]+)\):\s*(?<moderationReason>[\s\S]+)$/)
+	if (ban?.groups) {
+		return {
+			caseId: ban.groups.caseId,
+			timestamp: ban.groups.timestamp,
+			moderator: ban.groups.moderator,
+			duration: ban.groups.duration,
+			banReason: ban.groups.moderationReason.trim(),
+			moderationReason: ban.groups.moderationReason.trim()
+		}
+	}
+	const mute = reason.match(/^(?<moderationReason>[\s\S]*?)\s*\((?<caseId>[A-Za-z0-9_-]+)\)$/)
+	if (mute?.groups) {
+		return {
+			caseId: mute.groups.caseId,
+			banReason: mute.groups.moderationReason.trim(),
+			moderationReason: mute.groups.moderationReason.trim()
+		}
+	}
+	return {
+		banReason: reason,
+		moderationReason: reason
+	}
+}
+
+type DiscordAuditLog = {
+	audit_log_entries?: Array<{
+		action_type?: number
+		target_id?: string | null
+		user_id?: string | null
+		reason?: string | null
+		changes?: Array<{ key?: string; old_value?: unknown; new_value?: unknown }>
+	}>
+	users?: Array<{ id: string; username?: string; global_name?: string | null }>
+}
+
+const latestDiscordAuditEntry = async (input: { guildId: string; userId: string; actionType: number; timeoutOnly?: boolean }) => {
+	const audit = await fetchDiscord<DiscordAuditLog>(
+		`/guilds/${input.guildId}/audit-logs?action_type=${input.actionType}&limit=25`
+	)
+	const entry = audit.data?.audit_log_entries?.find((item) => {
+		if (item.target_id !== input.userId) {
+			return false
+		}
+		if (!input.timeoutOnly) {
+			return true
+		}
+		return item.changes?.some((change) => change.key === "communication_disabled_until" && Boolean(change.new_value))
+	})
+	const moderator = entry?.user_id
+		? audit.data?.users?.find((user) => user.id === entry.user_id)
+		: null
+	return entry ? {
+		...parseBarnacleReason(entry.reason),
+		moderator: moderator?.global_name ?? moderator?.username ?? entry.user_id ?? notAvailable
+	} : null
 }
 
 const latestDiscordBan = async (userId: string) => {
@@ -33,15 +97,17 @@ const latestDiscordBan = async (userId: string) => {
 	if (!ban.data) {
 		return null
 	}
+	const audit = await latestDiscordAuditEntry({ guildId, userId, actionType: discordAuditBanAdd })
 	return {
 		action: "banned",
 		unaction: "unbanned",
 		punishment: "Ban",
-		duration: "Permanent",
-		banReason: ban.data.reason || noListedReason,
-		moderationReason: ban.data.reason || noListedReason,
-		caseId: notAvailable,
-		moderator: notAvailable,
+		duration: audit?.duration ?? "Permanent",
+		banReason: audit?.banReason || ban.data.reason || noListedReason,
+		moderationReason: audit?.moderationReason || ban.data.reason || noListedReason,
+		caseId: audit?.caseId ?? notAvailable,
+		moderator: audit?.moderator ?? notAvailable,
+		...(audit?.timestamp ? { timestamp: audit.timestamp } : {}),
 		account: ban.data.user?.global_name ?? ban.data.user?.username ?? userId
 	}
 }
@@ -58,15 +124,16 @@ const latestDiscordTimeout = async (userId: string) => {
 	if (!member.data?.communication_disabled_until) {
 		return null
 	}
+	const audit = await latestDiscordAuditEntry({ guildId, userId, actionType: discordAuditMemberUpdate, timeoutOnly: true })
 	return {
 		action: "muted",
 		unaction: "unmuted",
 		punishment: "Mute",
 		duration: `Until ${member.data.communication_disabled_until}`,
-		banReason: noListedReason,
-		moderationReason: noListedReason,
-		caseId: notAvailable,
-		moderator: notAvailable,
+		banReason: audit?.banReason || noListedReason,
+		moderationReason: audit?.moderationReason || noListedReason,
+		caseId: audit?.caseId ?? notAvailable,
+		moderator: audit?.moderator ?? notAvailable,
 		account: member.data.user?.global_name ?? member.data.user?.username ?? userId
 	}
 }

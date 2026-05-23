@@ -59,6 +59,7 @@ const detailLinesFor = (form: FormConfig, submission: FormSubmission) => {
 			`- **ID:** ${submission.applicantId ?? "Unknown"}`,
 			`- **Punishment:** ${payload.punishment || "Unknown"}`,
 			`- **Case ID:** ${payload.caseId || "Not provided"}`,
+			...(payload.timestamp ? [`- **Timestamp:** ${payload.timestamp}`] : []),
 			`- **Reason:** ${payload.banReason || payload.moderationReason || "Not provided"}`,
 			`- **Duration:** ${payload.duration || "Not provided"}`,
 			`- **Moderator:** ${payload.moderator || "Not provided"}`
