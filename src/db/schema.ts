@@ -71,6 +71,65 @@ export const trackedThreads = sqliteTable(
 	]
 )
 
+export const redditModerationContexts = sqliteTable(
+	"reddit_moderation_contexts",
+	{
+		id: integer().primaryKey({ autoIncrement: true }),
+		subreddit: text().notNull(),
+		username: text().notNull(),
+		action: text().notNull().default("moderated"),
+		unaction: text().notNull().default("reviewed"),
+		banReason: text("ban_reason"),
+		moderator: text(),
+		bannedAt: text("banned_at"),
+		expiresAt: text("expires_at"),
+		rawPayload: text("raw_payload"),
+		createdAt: text("created_at")
+			.notNull()
+			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
+	},
+	(table) => [
+		uniqueIndex("idx_reddit_moderation_contexts_subreddit_username").on(table.subreddit, table.username),
+		index("idx_reddit_moderation_contexts_username").on(table.username),
+		index("idx_reddit_moderation_contexts_action").on(table.action)
+	]
+)
+
+export const formSubmissions = sqliteTable(
+	"form_submissions",
+	{
+		id: integer().primaryKey({ autoIncrement: true }),
+		formId: text("form_id").notNull(),
+		status: text().notNull().default("submitted"),
+		authProvider: text("auth_provider"),
+		applicantId: text("applicant_id"),
+		applicantUsername: text("applicant_username"),
+		payload: text().notNull(),
+		reviewChannelId: text("review_channel_id").notNull(),
+		reviewMessageId: text("review_message_id"),
+		reviewThreadId: text("review_thread_id"),
+		decidedAt: text("decided_at"),
+		decidedById: text("decided_by_id"),
+		decisionReason: text("decision_reason"),
+		actionResult: text("action_result"),
+		createdAt: text("created_at")
+			.notNull()
+			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+		updatedAt: text("updated_at")
+			.notNull()
+			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
+	},
+	(table) => [
+		index("idx_form_submissions_form_id").on(table.formId),
+		index("idx_form_submissions_status").on(table.status),
+		index("idx_form_submissions_applicant_id").on(table.applicantId),
+		index("idx_form_submissions_review_message_id").on(table.reviewMessageId)
+	]
+)
+
 export const claimRequests = sqliteTable(
 	"claim_requests",
 	{
@@ -105,5 +164,9 @@ export type HelperEvent = typeof helperEvents.$inferSelect
 export type NewHelperEvent = typeof helperEvents.$inferInsert
 export type TrackedThread = typeof trackedThreads.$inferSelect
 export type NewTrackedThread = typeof trackedThreads.$inferInsert
+export type RedditModerationContext = typeof redditModerationContexts.$inferSelect
+export type NewRedditModerationContext = typeof redditModerationContexts.$inferInsert
+export type FormSubmission = typeof formSubmissions.$inferSelect
+export type NewFormSubmission = typeof formSubmissions.$inferInsert
 export type ClaimRequest = typeof claimRequests.$inferSelect
 export type NewClaimRequest = typeof claimRequests.$inferInsert

@@ -6,3 +6,9 @@ These instructions apply to this repo.
 - Register new commands/listeners in `src/index.ts`.
 - Keep automod response templates in `src/config/automod-messages.json`.
 - Commands must declare integration types/interaction contexts explicitly: snippet commands should allow user installs, moderation commands must stay guild-only.
+- Use `bun`/`bunx` for package and script commands; do not use pnpm.
+- Keep form definitions config-driven in root `forms.config.ts`; no backoffice UI.
+- `forms.config.ts` is the production source of truth for form IDs, copy, review channels, and accept/deny actions; keep actions wired before calling forms prod-ready.
+- Put shared Forms types in `src/forms/types.ts`; do not define config types in `forms.config.ts`.
+- Prefer React SSR for web pages; avoid hand-built HTML strings for substantial views.
+- For Discord review messages, use Carbon components/buttons instead of raw component payload objects.

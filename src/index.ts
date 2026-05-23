@@ -15,6 +15,10 @@ import GithubLinkSuppressMessageCreate from "./events/githubLinkSuppressMessageC
 import GithubSummaryReactionAdd from "./events/githubSummaryReactionAdd.js"
 import Ready from "./events/ready.js"
 import ThreadCreateWelcome from "./events/threadCreateWelcome.js"
+import {
+	formReviewComponents,
+	formReviewModals
+} from "./forms/reviewButtons.js"
 import { fscRequestComponents } from "./components/fscRequestButtons.js"
 import { whoisDeleteComponents } from "./components/whoisDeleteButton.js"
 import { hydrateRuntimeEnv, type HermitEnv } from "./runtime/env.js"
@@ -23,6 +27,7 @@ import {
 	claimReviewModals,
 	registerClaimRoutes
 } from "./server/claimServer.js"
+import { handleFormsRequest } from "./forms/server.js"
 import { registerHelperLogsRoutes } from "./server/helperLogsServer.js"
 import { runThreadLengthMonitor } from "./services/threadLengthMonitor.js"
 
@@ -61,10 +66,11 @@ export const client = new Client(
 		],
 		components: [
 			...claimReviewComponents,
+			...formReviewComponents,
 			...fscRequestComponents,
 			...whoisDeleteComponents
 		],
-		modals: claimReviewModals
+		modals: [...claimReviewModals, ...formReviewModals]
 	}
 )
 
@@ -101,8 +107,12 @@ if (eventsRoute) {
 const handler = createHandler(client)
 
 export default {
-	fetch(request: Request, env: HermitEnv, ctx: ExecutionContext) {
+	async fetch(request: Request, env: HermitEnv, ctx: ExecutionContext) {
 		hydrateRuntimeEnv(env)
+		const formsResponse = await handleFormsRequest(request, client)
+		if (formsResponse) {
+			return formsResponse
+		}
 		return handler(request, {
 			env,
 			waitUntil: ctx.waitUntil.bind(ctx)
@@ -134,6 +144,14 @@ declare global {
 			GITHUB_APP_INSTALLATION_ID?: string;
 			GITHUB_APP_PRIVATE_KEY?: string;
 			GITHUB_APP_SLUG?: string;
+			GITHUB_OAUTH_CLIENT_ID?: string;
+			GITHUB_OAUTH_CLIENT_SECRET?: string;
+			FORMS_BASE_URL?: string;
+			FORMS_DEV?: string;
+			REDDIT_OAUTH_CLIENT_ID?: string;
+			REDDIT_OAUTH_CLIENT_SECRET?: string;
+			DEVVIT_REDDIT_BRIDGE_SECRET?: string;
+			DEVVIT_REDDIT_ACTION_URL?: string;
 		}
 	}
 }

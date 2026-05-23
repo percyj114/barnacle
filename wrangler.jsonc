@@ -8,6 +8,14 @@
     {
       "pattern": "hermit-discord.openclaw.ai",
       "custom_domain": true
+    },
+    {
+      "pattern": "appeal.openclaw.ai",
+      "custom_domain": true
+    },
+    {
+      "pattern": "forms.openclaw.ai",
+      "custom_domain": true
     }
   ],
   "observability": {

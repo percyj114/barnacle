@@ -5,25 +5,38 @@
 	"type": "module",
 	"main": "./src/index.ts",
 	"scripts": {
-		"dev": "wrangler dev --port 3000 --env-file .env",
-		"deploy": "wrangler deploy --env-file .env",
-		"deploy:cf": "wrangler d1 migrations apply DB --remote && wrangler deploy",
-		"deploy:dry-run": "wrangler deploy --dry-run",
+		"dev": "bun run dev:hermit",
+		"deploy": "bun run forms:css && wrangler deploy --env-file .env",
+		"deploy:cf": "bunx wrangler d1 migrations apply DB --remote && bun run deploy",
+		"deploy:cf:preview": "bun run forms:css && wrangler deploy --env-file .env --keep-vars --var FORMS_DEV:1",
+		"deploy:dry-run": "bun run forms:css && wrangler deploy --dry-run",
 		"cf-typegen": "wrangler types",
 		"postinstall": "wrangler types",
 		"test": "bun test",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "bun run forms:css && tsc --noEmit",
 		"db:generate": "drizzle-kit generate",
-		"db:apply:local": "wrangler d1 migrations apply hermit-db --local",
-		"db:apply:remote": "wrangler d1 migrations apply hermit-db --remote"
+		"db:apply:local": "wrangler d1 migrations apply DB --local",
+		"db:apply:remote": "wrangler d1 migrations apply DB --remote",
+		"forms:css": "postcss src/forms/styles.css -o src/forms/styles.generated.css && bun scripts/css-to-ts.ts src/forms/styles.generated.css src/forms/styles.generated.ts",
+		"dev:hermit": "wrangler dev --port 3000 --env-file .env",
+		"dev:forms": "bun run forms:css && wrangler dev --port 3001 --env-file .env --var FORMS_DEV:1 --var FORMS_BASE_URL:http://localhost:3001"
 	},
 	"dependencies": {
-		"@buape/carbon": "0.0.0-beta-20260427233936",
-		"drizzle-orm": "0.45.2"
+		"@buape/carbon": "0.16.0",
+		"drizzle-orm": "0.45.2",
+		"react": "19.2.6",
+		"react-dom": "19.2.6",
+		"react-router": "7.15.1"
 	},
 	"devDependencies": {
+		"@tailwindcss/postcss": "4.3.0",
 		"@types/node": "25.6.0",
+		"@types/react": "19.2.15",
+		"@types/react-dom": "19.2.3",
 		"drizzle-kit": "0.31.9",
+		"postcss": "8.5.15",
+		"postcss-cli": "11.0.1",
+		"tailwindcss": "4.3.0",
 		"typescript": "5.9.3",
 		"wrangler": "4.85.0"
 	}

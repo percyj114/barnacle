@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #060608;
+  --foreground: #fafafa;
+  --card: #0e0e10;
+  --card-foreground: #fafafa;
+  --popover: #0e0e10;
+  --popover-foreground: #fafafa;
+  --primary: #dc2626;
+  --primary-foreground: #ffffff;
+  --secondary: #131315;
+  --secondary-foreground: #fafafa;
+  --muted: #131315;
+  --muted-foreground: #a1a1a1;
+  --accent: rgba(220, 38, 38, 0.12);
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: rgba(220, 38, 38, 0.5);
+  --chart-1: #dc2626;
+  --chart-2: #ef4444;
+  --chart-3: #22c55e;
+  --chart-4: #fbbf24;
+  --chart-5: #a1a1a1;
+  --sidebar: #0e0e10;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #dc2626;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.04);
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(220, 38, 38, 0.5);
+  --font-sans: Manrope, Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Bricolage Grotesque", Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --radius: 8px;
+  --shadow-2xs: 0 1px 2px hsl(0 0% 0% / 0.18);
+  --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.22);
+  --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.26), 0 1px 2px hsl(0 0% 0% / 0.18);
+  --shadow: 0 1px 3px hsl(0 0% 0% / 0.30), 0 1px 2px hsl(0 0% 0% / 0.20);
+  --shadow-md: 0 8px 24px -12px hsl(0 0% 0% / 0.7), 0 0 0 1px hsl(0 0% 100% / 0.04);
+  --shadow-lg: 0 16px 36px -16px hsl(0 0% 0% / 0.72), 0 0 0 1px hsl(0 0% 100% / 0.04);
+  --shadow-xl: 0 24px 48px -18px hsl(0 0% 0% / 0.76), 0 0 0 1px hsl(0 0% 100% / 0.05);
+  --shadow-2xl: 0 32px 64px -24px hsl(0 0% 0% / 0.82), 0 0 0 1px hsl(0 0% 100% / 0.06);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background:
+      radial-gradient(ellipse at 38% 14%, rgba(220, 38, 38, 0.08), transparent 34rem),
+      radial-gradient(ellipse at 82% 70%, rgba(220, 38, 38, 0.045), transparent 28rem),
+      radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      var(--background);
+    background-size: auto, auto, 32px 32px, auto;
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+
+  h1 {
+    @apply mt-4 mb-2 text-4xl font-bold tracking-tight;
+    font-family: var(--font-display);
+  }
+
+  h2 {
+    @apply mt-8 mb-2 text-3xl font-bold tracking-tight;
+    font-family: var(--font-display);
+  }
+
+  h3 {
+    @apply mt-6 mb-2 text-2xl font-semibold;
+    font-family: var(--font-display);
+  }
+
+  h4 {
+    @apply mt-5 mb-2 text-xl font-semibold;
+  }
+
+  h5 {
+    @apply mt-4 mb-2 text-lg font-medium;
+  }
+
+  h6 {
+    @apply mt-4 mb-2 text-base font-medium;
+  }
+
+  p {
+    @apply my-3 leading-7;
+  }
+
+  strong {
+    @apply font-bold;
+  }
+
+  em {
+    @apply italic;
+  }
+
+  a {
+    @apply underline-offset-4;
+  }
+
+  ol {
+    @apply my-3 list-decimal pl-6;
+  }
+
+  ul {
+    @apply my-3 list-disc pl-6;
+  }
+
+  li {
+    @apply my-1;
+  }
+
+  blockquote {
+    @apply my-4 border-l-4 border-border pl-4 italic text-muted-foreground;
+  }
+
+  code {
+    @apply rounded-md bg-muted px-1 py-0.5 font-mono text-sm;
+  }
+
+  pre {
+    @apply my-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm;
+  }
+
+  pre code {
+    @apply bg-transparent p-0;
+  }
+
+  hr {
+    @apply my-6 border-border;
+  }
+
+  label {
+    @apply text-sm;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply outline-none focus:border-ring;
+  }
+}
