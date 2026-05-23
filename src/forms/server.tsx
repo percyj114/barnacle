@@ -111,6 +111,13 @@ const validatePayload = (form: FormConfig, payload: Record<string, string>, valu
 	return null
 }
 
+const threadNameFor = (form: FormConfig, submission: Awaited<ReturnType<typeof createFormSubmission>>) => {
+	const provider = submission.authProvider
+		? `${submission.authProvider.charAt(0).toUpperCase()}${submission.authProvider.slice(1)}`
+		: "Unknown"
+	return `${form.title} - ${submission.applicantUsername ?? submission.applicantId ?? "Unknown"} (${provider})`.slice(0, 100)
+}
+
 const sendReview = async (
 	client: Client,
 	form: FormConfig,
@@ -130,7 +137,7 @@ const sendReview = async (
 			method: "POST",
 			headers: jsonHeaders(),
 			body: JSON.stringify({
-				name: `${form.title} #${submission.id}`.slice(0, 100),
+				name: threadNameFor(form, submission),
 				auto_archive_duration: 1440
 			})
 		}

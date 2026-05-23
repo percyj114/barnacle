@@ -20,9 +20,6 @@ const FieldInput = ({
 	field: FormField
 	values?: Record<string, string>
 }) => {
-	if (field.type === "checkbox") {
-		return <Input className="h-5 w-5 p-0" id={field.id} name={field.id} required={field.required} type="checkbox" value={field.value ?? "on"} />
-	}
 	if (field.type === "autofill") {
 		return (
 			<Input
@@ -45,7 +42,44 @@ const FieldInput = ({
 			</Select>
 		)
 	}
-	return <Input id={field.id} name={field.id} required={field.required} placeholder={field.placeholder ? renderFormText(field.placeholder, values) : undefined} />
+	if (field.type === "text") {
+		return <Input id={field.id} name={field.id} required={field.required} placeholder={field.placeholder ? renderFormText(field.placeholder, values) : undefined} />
+	}
+	return null
+}
+
+const fieldRequired = (field: FormField) => "required" in field && field.required
+
+const Field = ({ field, values }: { field: FormField; values?: Record<string, string> }) => {
+	const label = renderFormText(field.label, values)
+	if (field.type === "checkbox") {
+		return (
+			<label
+				className="flex cursor-pointer items-start gap-3 rounded-lg border border-input bg-secondary p-4 transition-colors hover:border-primary/40 hover:bg-accent/50"
+				htmlFor={field.id}
+			>
+				<input
+					className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+					id={field.id}
+					name={field.id}
+					required={field.required}
+					type="checkbox"
+					value={field.value ?? "on"}
+				/>
+				<span className="text-[0.9375rem] font-semibold leading-snug tracking-tight text-foreground">
+					{label}{field.required ? <span className="text-primary"> *</span> : null}
+				</span>
+			</label>
+		)
+	}
+	return (
+		<section className="grid gap-2">
+			<label className="text-[0.9375rem] font-semibold leading-tight tracking-tight text-foreground" htmlFor={field.id}>
+				{label}{fieldRequired(field) ? <span className="text-primary"> *</span> : null}
+			</label>
+			<FieldInput field={field} values={values} />
+		</section>
+	)
 }
 
 const providerName = (provider: "discord" | "github" | "reddit") => {
@@ -53,7 +87,6 @@ const providerName = (provider: "discord" | "github" | "reddit") => {
 	if (provider === "reddit") return "Reddit"
 	return "Discord"
 }
-
 
 export const AuthGateRoute = ({ form, error }: { form: FormConfig; error?: string }) => (
 	<Card className="w-full">
@@ -94,14 +127,7 @@ export const FormRoute = ({
 		<CardContent>
 			<form className="grid gap-4" method="post" action={`/${form.id}/submit`}>
 				<input type="hidden" name="session" value={session} />
-				{form.fields.map((field) => (
-					<section className="grid gap-2" key={field.id}>
-						<label className="text-[0.9375rem] font-semibold leading-tight tracking-tight text-foreground" htmlFor={field.id}>
-							{renderFormText(field.label, values)}
-						</label>
-						<FieldInput field={field} values={values} />
-					</section>
-				))}
+				{form.fields.map((field) => <Field field={field} key={field.id} values={values} />)}
 				<Button className="w-fit" type="submit">Submit</Button>
 			</form>
 		</CardContent>

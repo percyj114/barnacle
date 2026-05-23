@@ -122,16 +122,21 @@ export const buildFormReviewContainer = (
 	} = {}
 ) => {
 	const status = options.status ?? "submitted"
+	const submittedAt = submission.createdAt ? Math.floor(new Date(submission.createdAt).getTime() / 1000) : Math.floor(Date.now() / 1000)
+	const decidedAt = Math.floor(Date.now() / 1000)
 	const footer = status === "submitted"
-		? `Unanswered • <t:${Math.floor(Date.now() / 1000)}:f>`
-		: `${status === "accepted" ? "✅ Accepted" : "❌ Rejected"} by <@${options.decidedById ?? "unknown"}> • <t:${Math.floor(Date.now() / 1000)}:f>`
+		? `Submitted • <t:${submittedAt}:f>`
+		: [
+			`Submitted • <t:${submittedAt}:f>`,
+			`${status === "accepted" ? "Accepted" : "Rejected"} by <@${options.decidedById ?? "unknown"}> • <t:${decidedAt}:f>`
+		].join("\n")
 	const extra = [
 		options.decisionReason ? `**Decision reason**\n${options.decisionReason}` : null,
 		options.actionResult ? `**Action result**\n${options.actionResult}` : null
 	].filter((line): line is string => Boolean(line))
 	return new Container(
 		[
-			new TextDisplay(`## 🎯 ${titleFor(form, submission)}`),
+			new TextDisplay(`## ${titleFor(form, submission)}`),
 			new TextDisplay(detailLinesFor(form, submission).join("\n")),
 			new TextDisplay([...answerLinesFor(form, submission), ...extra, footer].join("\n\n")),
 			...(status === "submitted"
