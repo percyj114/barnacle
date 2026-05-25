@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "bun run dev:hermit",
 		"deploy": "bun run forms:css && wrangler deploy --env-file .env",
-		"deploy:cf": "bunx wrangler d1 migrations apply DB --remote && bun run deploy",
+		"deploy:cf": "bunx wrangler d1 migrations apply DB --remote && bun run forms:css && wrangler deploy",
 		"deploy:cf:preview": "bun run forms:css && wrangler deploy --env-file .env --keep-vars --var FORMS_DEV:1",
 		"deploy:dry-run": "bun run forms:css && wrangler deploy --dry-run",
 		"cf-typegen": "wrangler types",
