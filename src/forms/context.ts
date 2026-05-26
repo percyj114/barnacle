@@ -203,6 +203,51 @@ const latestGitHubContext = async (username: string) => {
 	}
 }
 
+type ClawHubBanAppealContext = {
+	action?: "banned" | "moderated"
+	userId?: string | null
+	handle?: string | null
+	displayName?: string | null
+	banReason?: string | null
+	bannedAt?: number | null
+	auditAction?: string | null
+	auditActorUserId?: string | null
+}
+
+const clawHubApiBase = () => (process.env["CLAWHUB_API_BASE"] || "https://clawhub.ai").replace(/\/$/, "")
+
+const getClawHubHeaders = () => {
+	const token = process.env["CLAWHUB_BAN_APPEALS_TOKEN"]
+	if (!token) {
+		throw new Error("CLAWHUB_BAN_APPEALS_TOKEN is not configured.")
+	}
+	return { Authorization: `Bearer ${token}` }
+}
+
+const latestClawHubContext = async (providerAccountId: string) => {
+	const url = new URL(`${clawHubApiBase()}/api/v1/users/ban-appeal-context`)
+	url.searchParams.set("githubProviderAccountId", providerAccountId)
+	const response = await fetch(url, { headers: getClawHubHeaders() })
+	if (!response.ok) {
+		throw new Error(`ClawHub ${response.status}: ${await response.text()}`)
+	}
+	const context = await response.json() as ClawHubBanAppealContext
+	return {
+		action: context.action ?? "moderated",
+		unaction: context.action === "banned" ? "unbanned" : "reviewed",
+		clawhubUserId: context.userId ?? "",
+		clawhubHandle: context.handle ? `@${context.handle}` : notAvailable,
+		account: context.displayName ?? context.handle ?? notAvailable,
+		banReason: context.banReason || noListedReason,
+		moderationReason: context.banReason || noListedReason,
+		date: context.bannedAt ? new Date(context.bannedAt).toISOString() : notAvailable,
+		scope: "ClawHub account",
+		auditAction: context.auditAction ?? notAvailable,
+		auditActorUserId: context.auditActorUserId ?? notAvailable,
+		links: context.handle ? `${clawHubApiBase()}/${context.handle}` : clawHubApiBase()
+	}
+}
+
 const latestRedditContext = async (username: string) => {
 	const subreddit = formSettings.redditSubreddit
 	const normalized = normalizeRedditUsername(username)
@@ -232,6 +277,9 @@ export const fetchFormContext = async (
 	}
 	if (form.id === "github") {
 		return latestGitHubContext(user.username)
+	}
+	if (form.id === "clawhub") {
+		return latestClawHubContext(user.id)
 	}
 	if (form.id === "reddit") {
 		return latestRedditContext(user.username)
