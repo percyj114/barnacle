@@ -66,6 +66,46 @@ const resolveDiscordAppeal = async (action: Extract<FormAction, { type: "discord
 	return "No active Discord punishment found."
 }
 
+const clawHubApiBase = () => (process.env["CLAWHUB_API_BASE"] || "https://clawhub.ai").replace(/\/$/, "")
+
+const getClawHubHeaders = () => {
+	const token = process.env["CLAWHUB_BAN_APPEALS_TOKEN"]
+	if (!token) {
+		throw new Error("CLAWHUB_BAN_APPEALS_TOKEN is not configured.")
+	}
+	return {
+		Authorization: `Bearer ${token}`,
+		"content-type": "application/json"
+	}
+}
+
+const clawHubUnbanRequest = async (
+	action: Extract<FormAction, { type: "clawhub.unbanUser" }>,
+	submission: FormSubmission,
+	options: { reviewerDiscordId?: string }
+) => {
+	const target = resolveTarget(action.target, submission)
+	if (!target) {
+		throw new Error("ClawHub user ID is missing from submission context.")
+	}
+	if (!options.reviewerDiscordId) {
+		throw new Error("Reviewer Discord ID is missing.")
+	}
+	const response = await fetch(`${clawHubApiBase()}/api/v1/users/ban-appeal-unban`, {
+		method: "POST",
+		headers: getClawHubHeaders(),
+		body: JSON.stringify({
+			userId: target,
+			reason: action.reason ?? `Form ${submission.id}`,
+			reviewerDiscordId: options.reviewerDiscordId
+		})
+	})
+	if (!response.ok) {
+		throw new Error(`ClawHub ${response.status}: ${await response.text()}`)
+	}
+	return "clawhub.unbanUser"
+}
+
 const redditRequest = async (action: Extract<FormAction, { type: "reddit.unbanSubredditUser" }>, submission: FormSubmission) => {
 	const url = requireValue(process.env.DEVVIT_REDDIT_ACTION_URL ?? "", "DEVVIT_REDDIT_ACTION_URL")
 	const secret = requireValue(process.env.DEVVIT_REDDIT_BRIDGE_SECRET ?? "", "DEVVIT_REDDIT_BRIDGE_SECRET")
@@ -97,12 +137,19 @@ const redditRequest = async (action: Extract<FormAction, { type: "reddit.unbanSu
 	return "reddit.unbanSubredditUser"
 }
 
-const runAction = async (action: FormAction, submission: FormSubmission) => {
+const runAction = async (
+	action: FormAction,
+	submission: FormSubmission,
+	options: { reviewerDiscordId?: string }
+) => {
 	if (action.type === "discord.resolveAppeal") {
 		return resolveDiscordAppeal(action, submission)
 	}
 	if (action.type === "reddit.unbanSubredditUser") {
 		return redditRequest(action, submission)
+	}
+	if (action.type === "clawhub.unbanUser") {
+		return clawHubUnbanRequest(action, submission, options)
 	}
 	if (action.type === "discord.addRole" || action.type === "discord.removeRole") {
 		const method = action.type === "discord.addRole" ? "PUT" : "DELETE"
@@ -152,12 +199,13 @@ const runAction = async (action: FormAction, submission: FormSubmission) => {
 export const runFormActions = async (
 	form: FormConfig,
 	submission: FormSubmission,
-	decision: "accept" | "deny"
+	decision: "accept" | "deny",
+	options: { reviewerDiscordId?: string } = {}
 ) => {
 	const actions: readonly FormAction[] = form.actions[decision]
 	const results: string[] = []
 	for (const action of actions) {
-		results.push(await runAction(action, submission))
+		results.push(await runAction(action, submission, options))
 	}
 	return results.length > 0 ? results.join(", ") : "No external action required."
 }

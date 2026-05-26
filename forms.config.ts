@@ -2,6 +2,7 @@ import type { FormConfig, FormField } from "./src/forms/types.js"
 
 export const formSettings = {
 	reviewChannelId: "1467242758183059536",
+	clawhubAppealReviewChannelId: "1498032057337647295",
 	shadowChannelId: "1464886408090226902",
 	discordGuildId: "1456350064065904867",
 	githubOrg: "openclaw",
@@ -100,6 +101,26 @@ export const formConfigs = [
 					type: "github.unblockOrgUser",
 					org: formSettings.githubOrg,
 					target: "authUsername"
+				}
+			],
+			deny: []
+		}
+	},
+	{
+		id: "clawhub",
+		title: "ClawHub Ban Appeal",
+		description: "Request a ClawHub account ban review.",
+		auth: "github",
+		requiredAction: "banned",
+		reviewChannelId: formSettings.clawhubAppealReviewChannelId,
+		successMessage: "Submitted.",
+		fields: appealFields,
+		actions: {
+			accept: [
+				{
+					type: "clawhub.unbanUser",
+					target: "clawhubUserId",
+					reason: "Appeal accepted."
 				}
 			],
 			deny: []
