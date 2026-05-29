@@ -33,7 +33,7 @@ const findGifLink = (content: string) => {
 			continue
 		}
 	}
-	return null
+	return undefined
 }
 
 const fetchChannel = async (client: Client, channelId: string) =>

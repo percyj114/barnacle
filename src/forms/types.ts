@@ -42,6 +42,7 @@ export type FormConfig = {
 	auth: FormAuthProvider | FormAuthProvider[]
 	requiredAction?: Exclude<ModerationAction, "moderated">
 	reviewChannelId: string
+	reviewRoleId: string | null
 	successMessage: string
 	fields: FormField[]
 	actions: { accept: FormAction[]; deny: FormAction[] }
@@ -57,4 +58,5 @@ export type FormAction =
 	| { type: "discord.resolveAppeal"; guildId: string; target: FormTarget; reason?: string }
 	| { type: "github.blockOrgUser"; org: string; target: FormTarget }
 	| { type: "github.unblockOrgUser"; org: string; target: FormTarget }
+	| { type: "clawhub.unbanUser"; target: FormTarget; reason?: string }
 	| { type: "reddit.unbanSubredditUser"; subreddit: string; target: FormTarget; reason?: string }

@@ -2,7 +2,11 @@ import type { FormConfig, FormField } from "./src/forms/types.js"
 
 export const formSettings = {
 	reviewChannelId: "1467242758183059536",
+	reviewRoleId: "1477360613125787678",
+	clawhubAppealReviewChannelId: "1498032057337647295",
+	clawhubAppealReviewRoleId: "1509967254870298794",
 	shadowChannelId: "1464886408090226902",
+	shadowReviewRoleId: "1477504469473427497",
 	discordGuildId: "1456350064065904867",
 	githubOrg: "openclaw",
 	redditSubreddit: "openclaw"
@@ -50,6 +54,7 @@ export const formConfigs = [
 		auth: "discord",
 		requiredAction: "banned",
 		reviewChannelId: formSettings.reviewChannelId,
+		reviewRoleId: formSettings.reviewRoleId,
 		successMessage: "Submitted.",
 		fields: appealFields,
 		actions: {
@@ -71,6 +76,7 @@ export const formConfigs = [
 		auth: "discord",
 		requiredAction: "muted",
 		reviewChannelId: formSettings.reviewChannelId,
+		reviewRoleId: formSettings.reviewRoleId,
 		successMessage: "Submitted.",
 		fields: appealFields,
 		actions: {
@@ -92,6 +98,7 @@ export const formConfigs = [
 		auth: "github",
 		requiredAction: "banned",
 		reviewChannelId: formSettings.reviewChannelId,
+		reviewRoleId: formSettings.reviewRoleId,
 		successMessage: "Submitted.",
 		fields: appealFields,
 		actions: {
@@ -106,12 +113,34 @@ export const formConfigs = [
 		}
 	},
 	{
+		id: "clawhub",
+		title: "ClawHub Ban Appeal",
+		description: "Request a ClawHub account ban review.",
+		auth: "github",
+		requiredAction: "banned",
+		reviewChannelId: formSettings.clawhubAppealReviewChannelId,
+		reviewRoleId: formSettings.clawhubAppealReviewRoleId,
+		successMessage: "Submitted.",
+		fields: appealFields,
+		actions: {
+			accept: [
+				{
+					type: "clawhub.unbanUser",
+					target: "clawhubUserId",
+					reason: "Appeal accepted."
+				}
+			],
+			deny: []
+		}
+	},
+	{
 		id: "reddit",
 		title: "Reddit Ban Appeal",
 		description: "Request a Reddit ban review.",
 		auth: "reddit",
 		requiredAction: "banned",
 		reviewChannelId: formSettings.reviewChannelId,
+		reviewRoleId: formSettings.reviewRoleId,
 		successMessage: "Submitted.",
 		fields: appealFields,
 		actions: {
@@ -132,6 +161,7 @@ export const formConfigs = [
 		description: "Report moderator misconduct.",
 		auth: ["discord", "github", "reddit"],
 		reviewChannelId: formSettings.shadowChannelId,
+		reviewRoleId: formSettings.shadowReviewRoleId,
 		successMessage: "Submitted.",
 		fields: [
 			{

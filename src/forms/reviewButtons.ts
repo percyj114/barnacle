@@ -54,6 +54,9 @@ const titleFor = (form: FormConfig, submission: FormSubmission) => {
 	if (form.id === "github") {
 		return `GitHub Ban Appeal sent by @${applicantName(submission)}`
 	}
+	if (form.id === "clawhub") {
+		return `ClawHub Ban Appeal sent by @${applicantName(submission)}`
+	}
 	if (form.id === "reddit") {
 		return `Reddit Ban Appeal sent by @${applicantName(submission)}`
 	}
@@ -113,6 +116,20 @@ const detailComponentsFor = (form: FormConfig, submission: FormSubmission) => {
 			detailField("Links", payload.links)
 		].join("\n"))]
 	}
+	if (form.id === "clawhub") {
+		return [new TextDisplay([
+			detailField("GitHub user", `@${applicantName(submission)}`),
+			detailField("GitHub ID", submission.applicantId ?? "Unknown"),
+			detailField("ClawHub user", payload.clawhubHandle || payload.account),
+			detailField("ClawHub ID", payload.clawhubUserId),
+			detailField("Scope", payload.scope || "Unknown"),
+			detailField("Reason", payload.banReason),
+			detailField("Date", payload.date),
+			detailField("Audit action", payload.auditAction),
+			detailField("Audit actor", payload.auditActorUserId),
+			detailField("Links", payload.links)
+		].join("\n"))]
+	}
 	if (form.id === "reddit") {
 		return [new TextDisplay([
 			detailField("Reddit user", applicantName(submission)),
@@ -145,6 +162,9 @@ const answerLinesFor = (form: FormConfig, submission: FormSubmission) => {
 			}
 			if (form.id === "github") {
 				return !["scope", "links"].includes(field.id)
+			}
+			if (form.id === "clawhub") {
+				return !["scope", "links", "auditAction", "auditActorUserId", "clawhubUserId", "clawhubHandle", "date"].includes(field.id)
 			}
 			return true
 		})
@@ -208,6 +228,7 @@ export const buildFormReviewContainer = (
 	].filter((line): line is string => Boolean(line))
 	return new Container(
 		[
+			...(form.reviewRoleId ? [new TextDisplay(`-# <@&${form.reviewRoleId}>`)] : []),
 			new TextDisplay(`## ${titleFor(form, submission)}`),
 			...detailComponentsFor(form, submission),
 			new Separator({ divider: true, spacing: "small" }),
@@ -236,6 +257,21 @@ const resultContainer = (title: string, body: string, color: string) =>
 	new Container([new TextDisplay(`### ${title}`), new TextDisplay(body)], {
 		accentColor: color
 	})
+
+const canReview = (interaction: ButtonInteraction | ModalInteraction, form: FormConfig) =>
+	!form.reviewRoleId || (interaction.member?.roles.some((role) => role.id === form.reviewRoleId) ?? false)
+
+const requireReviewRole = async (interaction: ButtonInteraction | ModalInteraction, form: FormConfig) => {
+	if (canReview(interaction, form)) {
+		return true
+	}
+	await interaction.reply({
+		components: [resultContainer("Review role required", `You need <@&${form.reviewRoleId}> to review this submission.`, "#f85149")],
+		ephemeral: true,
+		allowedMentions: { parse: [] }
+	})
+	return false
+}
 
 const loadSubmission = async (id: unknown) => {
 	if (typeof id !== "number") {
@@ -294,13 +330,17 @@ const decide = async (
 		return
 	}
 
+	if (!(await requireReviewRole(interaction, loaded.form))) {
+		return
+	}
+
 	const reason = interaction.fields.getText(reasonInputId, false)?.trim()
 	const duration = interaction.fields.getText(durationInputId, false)?.trim()
 	let actionResult = duration ? `New duration requested: ${duration}` : "No external action required."
 	try {
 		actionResult = status === "accepted"
-			? await runFormActions(loaded.form, loaded.submission, "accept")
-			: await runFormActions(loaded.form, loaded.submission, "deny")
+			? await runFormActions(loaded.form, loaded.submission, "accept", { reviewerDiscordId: interaction.user?.id })
+			: await runFormActions(loaded.form, loaded.submission, "deny", { reviewerDiscordId: interaction.user?.id })
 		if (duration) {
 			actionResult = `${actionResult}\nNew duration: ${duration}`
 		}
@@ -452,6 +492,9 @@ export class FormReviewAcceptButton extends Button {
 			})
 			return
 		}
+		if (!(await requireReviewRole(interaction, loaded.form))) {
+			return
+		}
 		await interaction.showModal(new FormReviewDecisionModal("accepted", loaded.id))
 	}
 }
@@ -478,6 +521,9 @@ export class FormReviewDenyButton extends Button {
 			})
 			return
 		}
+		if (!(await requireReviewRole(interaction, loaded.form))) {
+			return
+		}
 		await interaction.showModal(new FormReviewDecisionModal("denied", loaded.id))
 	}
 }
@@ -501,6 +547,9 @@ export class FormReviewLockButton extends Button {
 			await interaction.reply({
 				components: [resultContainer("Invalid form submission", loaded.error ?? "Unknown error.", "#f85149")]
 			})
+			return
+		}
+		if (!(await requireReviewRole(interaction, loaded.form))) {
 			return
 		}
 		const locked = await recordFormLock(loaded.id)

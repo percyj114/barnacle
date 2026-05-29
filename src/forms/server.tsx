@@ -145,7 +145,7 @@ const sendReview = async (
 	}
 	const message = await channel.send({
 		components: [buildFormReviewContainer(form, submission)],
-		allowedMentions: { parse: [] }
+		allowedMentions: form.reviewRoleId ? { roles: [form.reviewRoleId], users: [] } : { parse: [] }
 	})
 	const threadResponse = await fetch(
 		`${discordApiBase}/channels/${form.reviewChannelId}/messages/${message.id}/threads`,

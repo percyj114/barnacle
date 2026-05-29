@@ -27,7 +27,7 @@ import {
 import { getRuntimeEnv } from "../runtime/env.js"
 
 const clawtributorsRoleId = "1458375944111915051"
-const claimReviewRoleId = "1460436814627078433"
+const claimReviewRoleId = "1477360613125787678"
 const claimReviewChannelId = "1503772785120383057"
 const clawtributorsAnnouncementChannelId = "1458141495701012561"
 const githubOwner = "openclaw"
@@ -838,7 +838,7 @@ const handleClaimCallback = async (request: Request, client: Client) => {
 			components: [
 				new Container(
 					[
-						new TextDisplay(`<@&${claimReviewRoleId}>`),
+						new TextDisplay(`-# <@&${claimReviewRoleId}>`),
 						new TextDisplay("### Clawtributor Claim Request"),
 						new TextDisplay(
 							`- User: <@${payload.userId}>\n- ID: ${payload.userId}\n- GitHub: [@${qualifyingSummary.username}](<https://github.com/${qualifyingSummary.username}>)\n- Merged PRs: **${qualifyingSummary.totalCount}**`
