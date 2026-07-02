@@ -6,6 +6,8 @@ declare global {
 		ANSWER_OVERFLOW_API_KEY: string
 		BASE_URL: string
 		CLAWHUB_BAN_APPEALS_TOKEN: string
+		CLAWHUB_HERMIT_TOKEN?: string
+		CLAWHUB_SITE_URL?: string
 		DEPLOY_SECRET: string
 		DISCORD_BOT_TOKEN: string
 		DISCORD_CLIENT_ID: string

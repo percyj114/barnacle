@@ -37,6 +37,7 @@ import {
 } from "./services/nominationExpiry.js"
 import { runThreadLengthMonitor } from "./services/threadLengthMonitor.js"
 import { handleContentRightsApiRequest } from "./clawhubContentRights/api.js"
+import { handlePublisherAbuseDigestApiRequest } from "./clawhubPublisherAbuse/api.js"
 
 export const client = new Client(
 	{
@@ -122,6 +123,10 @@ export default {
 		if (contentRightsApiResponse) {
 			return contentRightsApiResponse
 		}
+		const publisherAbuseDigestResponse = await handlePublisherAbuseDigestApiRequest(request, client)
+		if (publisherAbuseDigestResponse) {
+			return publisherAbuseDigestResponse
+		}
 		const formsResponse = await handleFormsRequest(request, client)
 		if (formsResponse) {
 			return formsResponse
@@ -171,6 +176,8 @@ declare global {
 			DEVVIT_REDDIT_ACTION_URL?: string;
 			RESEND_API_KEY?: string;
 			CLAWHUB_NOREPLY_FROM?: string;
+			CLAWHUB_HERMIT_TOKEN?: string;
+			CLAWHUB_SITE_URL?: string;
 		}
 	}
 }
