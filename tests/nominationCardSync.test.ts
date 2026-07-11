@@ -112,7 +112,12 @@ describe("nomination card synchronization", () => {
 
 			expect(result).toEqual({ status: "synced" })
 			expect(patches).toHaveLength(1)
-			expect(JSON.stringify(patches[0])).toContain("**Approvals:** 1/3")
+			expect(JSON.stringify(patches[0])).toContain(
+				"**Approvals (1/3):** <@reviewer-1>"
+			)
+			expect(JSON.stringify(patches[0])).toContain(
+				"**Declines (0/3):** None"
+			)
 			expect(cardState(owner.database, nominationId)).toEqual({
 				desiredCardRevision: 2,
 				syncedCardRevision: 2,

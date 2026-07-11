@@ -51,7 +51,7 @@ export const syncNominationReviewCard = async (
 			return { status: "missing" }
 		}
 
-		const { nomination, totals } = state
+		const { nomination, totals, votes } = state
 		if (nomination.desiredCardRevision <= nomination.syncedCardRevision) {
 			return { status: "current" }
 		}
@@ -78,7 +78,7 @@ export const syncNominationReviewCard = async (
 				Routes.channelMessage(nomination.channelId, messageId),
 				{
 					body: serializePayload({
-						components: [buildNominationContainer(nomination, totals)],
+						components: [buildNominationContainer(nomination, votes)],
 						allowedMentions: { parse: [] }
 					})
 				}

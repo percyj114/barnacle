@@ -163,10 +163,7 @@ export default class NominateCommand extends BaseCommand {
 				{
 					body: serializePayload({
 						components: [
-							buildNominationContainer(nomination, {
-								approvals: 0,
-								declines: 0
-							})
+							buildNominationContainer(nomination)
 						],
 						allowedMentions: { parse: [] }
 					})

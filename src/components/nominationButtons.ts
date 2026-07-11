@@ -10,8 +10,8 @@ import {
 } from "@buape/carbon"
 import { nominationConfig } from "../config/nominations.js"
 import type {
-	NominationVoteChoice,
-	NominationVoteTotals
+	NominationVote,
+	NominationVoteChoice
 } from "../data/nominations.js"
 import type { Nomination } from "../db/schema.js"
 
@@ -50,9 +50,26 @@ export const buildNominationNoticeContainer = (
 	accentColor = "#f1c40f"
 ) => new Container([new TextDisplay(body)], { accentColor })
 
+const formatVoteSummary = (
+	label: string,
+	choice: NominationVoteChoice,
+	votes: NominationVote[],
+	requiredApprovals: number
+) => {
+	const reviewerIds = votes
+		.filter((vote) => vote.choice === choice)
+		.map((vote) => vote.reviewerId)
+	const reviewers =
+		reviewerIds.length > 0
+			? reviewerIds.map((reviewerId) => `<@${reviewerId}>`).join(", ")
+			: "None"
+
+	return `**${label} (${Math.min(reviewerIds.length, requiredApprovals)}/${requiredApprovals}):** ${reviewers}`
+}
+
 export const buildNominationContainer = (
 	nomination: Nomination,
-	totals: NominationVoteTotals
+	votes: NominationVote[] = []
 ) => {
 	const votingClosed = nomination.status !== "submitted"
 
@@ -65,7 +82,7 @@ export const buildNominationContainer = (
 			new TextDisplay(`**Reason**\n${nomination.reason}`),
 			new Separator({ divider: true, spacing: "small" }),
 			new TextDisplay(
-				`**Approvals:** ${Math.min(totals.approvals, nomination.requiredApprovals)}/${nomination.requiredApprovals}\n**Declines:** ${Math.min(totals.declines, nomination.requiredApprovals)}/${nomination.requiredApprovals}`
+				`${formatVoteSummary("Approvals", "approve", votes, nomination.requiredApprovals)}\n${formatVoteSummary("Declines", "decline", votes, nomination.requiredApprovals)}`
 			),
 			new TextDisplay(statusCopy(nomination)),
 			new Separator({ divider: true, spacing: "small" }),

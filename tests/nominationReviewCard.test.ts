@@ -2,6 +2,10 @@ import { describe, expect, it } from "bun:test"
 import { serializePayload } from "@buape/carbon"
 import { buildNominationContainer } from "../src/components/nominationButtons.js"
 import { nominationConfig } from "../src/config/nominations.js"
+import type {
+	NominationVote,
+	NominationVoteChoice
+} from "../src/data/nominations.js"
 import type { Nomination } from "../src/db/schema.js"
 import {
 	hasNominationApproverRole,
@@ -43,14 +47,22 @@ const flattenComponents = (component: unknown): Record<string, unknown>[] => {
 	return [record, ...children]
 }
 
+const makeVotes = (
+	choices: NominationVoteChoice[]
+): NominationVote[] =>
+	choices.map((choice, index) => ({
+		reviewerId: `reviewer-${index + 1}`,
+		choice
+	}))
+
 describe("nomination review card", () => {
 	it("renders both vote totals and thumb controls for an open nomination", () => {
 		const payload = serializePayload({
 			components: [
-				buildNominationContainer(nomination, {
-					approvals: 2,
-					declines: 1
-				})
+				buildNominationContainer(
+					nomination,
+					makeVotes(["approve", "approve", "decline"])
+				)
 			]
 		})
 		const components = flattenComponents(payload)
@@ -60,8 +72,10 @@ describe("nomination review card", () => {
 			.join("\n")
 		const buttons = components.filter((component) => component.type === 2)
 
-		expect(text).toContain("**Approvals:** 2/3")
-		expect(text).toContain("**Declines:** 1/3")
+		expect(text).toContain(
+			"**Approvals (2/3):** <@reviewer-1>, <@reviewer-2>"
+		)
+		expect(text).toContain("**Declines (1/3):** <@reviewer-3>")
 		expect(text).not.toContain("👍 Approvals")
 		expect(text).not.toContain("👎 Declines")
 		expect(text).toContain("**Status:** Open")
@@ -92,10 +106,10 @@ describe("nomination review card", () => {
 		} satisfies Nomination
 		const payload = serializePayload({
 			components: [
-				buildNominationContainer(approved, {
-					approvals: 3,
-					declines: 1
-				})
+				buildNominationContainer(
+					approved,
+					makeVotes(["approve", "approve", "approve", "decline"])
+				)
 			]
 		})
 		const components = flattenComponents(payload)
@@ -119,6 +133,12 @@ describe("nomination review card", () => {
 		["expired", "Expired"]
 	] as const) {
 		it(`renders the ${status} state with voting disabled`, () => {
+			const choices: NominationVoteChoice[] =
+				status === "granting"
+					? ["approve", "approve", "approve"]
+					: status === "declined"
+						? ["decline", "decline", "decline"]
+						: ["approve", "decline"]
 			const payload = serializePayload({
 				components: [
 					buildNominationContainer(
@@ -126,10 +146,7 @@ describe("nomination review card", () => {
 							...nomination,
 							status
 						},
-						{
-							approvals: status === "granting" ? 3 : 1,
-							declines: status === "declined" ? 3 : 1
-						}
+						makeVotes(choices)
 					)
 				]
 			})
@@ -147,6 +164,19 @@ describe("nomination review card", () => {
 			expect(buttons.every((button) => button.disabled === true)).toBe(true)
 		})
 	}
+
+	it("shows an explicit empty state before anyone votes", () => {
+		const payload = serializePayload({
+			components: [buildNominationContainer(nomination)]
+		})
+		const text = flattenComponents(payload)
+			.map((component) => component.content)
+			.filter((content): content is string => typeof content === "string")
+			.join("\n")
+
+		expect(text).toContain("**Approvals (0/3):** None")
+		expect(text).toContain("**Declines (0/3):** None")
+	})
 })
 
 describe("nomination interaction authorization", () => {
