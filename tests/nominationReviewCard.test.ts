@@ -60,23 +60,28 @@ describe("nomination review card", () => {
 			.join("\n")
 		const buttons = components.filter((component) => component.type === 2)
 
-		expect(text).toContain("👍 Approvals: 2/3")
-		expect(text).toContain("👎 Declines: 1/3")
+		expect(text).toContain("**Approvals:** 2/3")
+		expect(text).toContain("**Declines:** 1/3")
+		expect(text).not.toContain("👍 Approvals")
+		expect(text).not.toContain("👎 Declines")
 		expect(text).toContain("**Status:** Open")
 		expect(buttons).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					custom_id: "nomination-approve:id=42",
 					disabled: false,
-					emoji: { name: "👍" }
+					label: "👍"
 				}),
 				expect.objectContaining({
 					custom_id: "nomination-decline:id=42",
 					disabled: false,
-					emoji: { name: "👎" }
+					label: "👎"
 				})
 			])
 		)
+		expect(buttons.every((button) => button.emoji === undefined)).toBe(true)
+		expect(buttons.every((button) => button.label !== "Thumbs up")).toBe(true)
+		expect(buttons.every((button) => button.label !== "Thumbs down")).toBe(true)
 	})
 
 	it("keeps terminal details private-card shaped without welcome copy", () => {

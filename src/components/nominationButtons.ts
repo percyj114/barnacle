@@ -65,7 +65,7 @@ export const buildNominationContainer = (
 			new TextDisplay(`**Reason**\n${nomination.reason}`),
 			new Separator({ divider: true, spacing: "small" }),
 			new TextDisplay(
-				`👍 Approvals: ${Math.min(totals.approvals, nomination.requiredApprovals)}/${nomination.requiredApprovals}\n👎 Declines: ${Math.min(totals.declines, nomination.requiredApprovals)}/${nomination.requiredApprovals}`
+				`**Approvals:** ${Math.min(totals.approvals, nomination.requiredApprovals)}/${nomination.requiredApprovals}\n**Declines:** ${Math.min(totals.declines, nomination.requiredApprovals)}/${nomination.requiredApprovals}`
 			),
 			new TextDisplay(statusCopy(nomination)),
 			new Separator({ divider: true, spacing: "small" }),
@@ -94,8 +94,7 @@ abstract class NominationVoteButton extends Button {
 
 export class NominationApproveButton extends NominationVoteButton {
 	customId = "nomination-approve"
-	label = nominationConfig.copy.approveButtonLabel
-	emoji = { name: "👍" }
+	label = "👍"
 	style = ButtonStyle.Success
 	choice = "approve" as const
 
@@ -110,8 +109,7 @@ export class NominationApproveButton extends NominationVoteButton {
 
 export class NominationDeclineButton extends NominationVoteButton {
 	customId = "nomination-decline"
-	label = nominationConfig.copy.declineButtonLabel
-	emoji = { name: "👎" }
+	label = "👎"
 	style = ButtonStyle.Danger
 	choice = "decline" as const
 

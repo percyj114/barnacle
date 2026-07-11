@@ -10,8 +10,6 @@ export const nominationConfig = {
 	commandName: "nominate",
 	copy: {
 		title: "Shell Society nomination",
-		approveButtonLabel: "Thumbs up",
-		declineButtonLabel: "Thumbs down",
 		wrongChannel: "Use this command in the Shell Society channel.",
 		selfNomination: "You cannot nominate yourself.",
 		reasonRequired: "Reason required. The shell demands context.",
