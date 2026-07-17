@@ -24,6 +24,23 @@ export type SlapFish = {
 export const slapSceneVariants = [1, 2, 3] as const
 export type SlapSceneVariant = typeof slapSceneVariants[number]
 
+export const slapStandardOutcomes = [
+	"normal",
+	"critical",
+	"dodge",
+	"refusal",
+	"double",
+	"self",
+	"hermit",
+	"rock_lobster",
+	"bot"
+] as const satisfies readonly SlapOutcome[]
+
+export const slapOutcomesForRarity = (rarity: SlapRarity) =>
+	rarity === "legendary"
+		? [...slapStandardOutcomes, "legendary" as const]
+		: [...slapStandardOutcomes]
+
 export const slapSceneUrl = (
 	fishSlug: string,
 	outcome: SlapOutcome,

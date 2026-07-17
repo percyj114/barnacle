@@ -1,0 +1,462 @@
+# Lobster Encounters
+
+## Status
+
+- Product status: Draft
+- PRD date: July 17, 2026
+- Implementation status: Blocked
+- Blocking prerequisite: Replace, validate, deploy, and approve the complete fish
+  slap artwork library
+- Source of truth: This document
+- Delivery rule: Do not implement `/lobster`, create its schema, provision its
+  production storage, or generate its production artwork until the blocking
+  prerequisite is complete
+
+## Summary
+
+Add a guild-only `/lobster` command and `Release Lobster` user command to Hermit.
+An authorized staff member selects a target, Hermit deploys one scientifically
+recognized marine lobster species, and the target receives an interactive,
+species-specific encounter.
+
+The feature must represent every accepted, extant marine lobster species in the
+frozen production taxonomy. Artwork must reflect each species' anatomy and may
+use pinching, antenna strikes, tail-powered escapes, body checks, ambushes,
+refusals, ceremonial appearances, or other species-appropriate behavior.
+
+This is not a lobster-themed copy of `/slap`. It is a larger visual anthology
+with materially different settings, media, compositions, casts, moods, and
+actions.
+
+## Background
+
+Hermit's current fish slap feature uses a fixed fish-by-outcome scene matrix.
+Although the scene count is large, its first artwork generation pass repeated a
+narrow visual grammar: adult men, office or hearing-room interiors, similar
+camera angles, and polished photorealistic action stills.
+
+The lobster feature must not repeat that failure at a larger scale. Diversity
+must be encoded in catalog metadata, generation manifests, quotas, and review
+gates before production generation starts.
+
+The 2019 *Updated Checklist of the World's Marine Lobsters* recognized 260
+species across six families. The production count may differ because taxonomy
+continues to change. Hermit will therefore use a dated, checksummed World
+Register of Marine Species snapshot rather than a hardcoded historical count.
+
+## Goals
+
+1. Represent every species in the approved frozen marine lobster taxonomy.
+2. Make anatomy and species identity materially affect each encounter.
+3. Produce at least four approved, visibly distinct scenes per species.
+4. Provide strong variation in medium, tone, environment, composition, palette,
+   lighting, action, and adult cast.
+5. Give the named target one durable, target-only response to the encounter.
+6. Share cooldown enforcement with `/slap` so the commands cannot bypass one
+   another.
+7. Store production artwork outside Git history in dedicated public object
+   storage.
+8. Keep command execution deterministic, durable, idempotent, and guild-only.
+9. Use Carbon components v2 for every Discord response and incident card.
+10. Make taxonomy and artwork refreshes versioned and reproducible.
+
+## Non-Goals
+
+- Implementing or generating the feature before slap artwork remediation is
+  approved.
+- Treating every common name containing "lobster" as an included species.
+- Including squat lobsters, freshwater crayfish, fossils, extinct species,
+  synonyms, or subspecies in v1.
+- Querying WoRMS during a Discord interaction.
+- Giving every species an identical outcome matrix.
+- Generating artwork from Discord avatars or attempting to depict real users.
+- Allowing user installs, direct messages, or use outside the configured guild.
+- Building a backoffice UI.
+- Storing the production image corpus in the Git repository.
+- Reusing the existing private ClawHub case-file bucket for public artwork.
+
+## Taxonomy
+
+### Included Families
+
+The initial catalog covers accepted extant marine species in these six lobster
+families:
+
+1. Nephropidae
+2. Enoplometopidae
+3. Glypheidae
+4. Palinuridae
+5. Scyllaridae
+6. Polychelidae
+
+### Inclusion Rules
+
+A catalog record is included only when the frozen WoRMS snapshot reports:
+
+- Taxonomic rank exactly equal to `Species`.
+- Accepted taxonomic status.
+- Marine status.
+- Extant status.
+- Membership in one of the six approved families.
+
+Synonyms resolve to the accepted species and do not receive separate selection
+weight or artwork. Subspecies, fossils, extinct records, freshwater-only
+records, brackish-only records, and unaccepted names are excluded.
+
+### Snapshot Requirements
+
+The taxonomy build must persist:
+
+- Snapshot identifier and UTC creation timestamp.
+- WoRMS AphiaID.
+- Accepted scientific name and authority.
+- Family, genus, and species classification.
+- WoRMS status and marine/extinction flags.
+- Source endpoint and query definition.
+- Source citation.
+- Raw export checksum.
+- Normalized catalog checksum.
+
+The runtime bundles the normalized snapshot. It never depends on a live WoRMS
+request.
+
+## Authorization
+
+Both entry points are guild-install and guild-context only. Invocation requires
+at least one of these roles:
+
+| Role | ID |
+|---|---|
+| Community Team | `1477360613125787678` |
+| Maintainer | `1457214688806047756` |
+| Maintainer Guest | `1503268035908075590` |
+
+Target-response buttons are restricted to the named target. Holding an
+authorized invocation role does not allow someone else to respond for the
+target.
+
+## Command Surface
+
+### Slash Command
+
+`/lobster user:<user>`
+
+### User Command
+
+`Release Lobster`
+
+Both entry points create the same durable encounter and use the same
+authorization, cooldown, selection, and rendering paths.
+
+## Encounter Workflow
+
+1. An authorized member selects a target.
+2. Hermit verifies guild jurisdiction, authorization, and shared cooldowns.
+3. Hermit deterministically selects one species uniformly from the frozen
+   catalog.
+4. Hermit selects one approved asset for that species without allowing species
+   with larger art packs to become more likely.
+5. Hermit derives the encounter copy, metrics, and available target responses
+   from species metadata and the selected scene.
+6. Hermit persists the complete encounter before publishing its canonical
+   Carbon card.
+7. Hermit binds the Discord message to the stored encounter.
+8. The named target may choose one response.
+9. Hermit records the first valid response atomically and updates the canonical
+   card.
+
+Interaction retries must reproduce the same species, scene, copy, and metrics.
+
+## Target Responses
+
+The initial release provides two mutually exclusive responses:
+
+### Return To Sender
+
+The selected lobster redirects the encounter toward the original actor. Hermit
+records and renders a species-appropriate counter-event using a separately
+selected approved asset.
+
+### Offer Butter
+
+The lobster accepts or rejects a negotiated release according to deterministic
+species-specific copy. This response closes the encounter without a
+counter-event.
+
+Only one response may win. Repeated clicks are idempotent. Bots have response
+controls disabled.
+
+## Shared Cooldowns
+
+`/slap` and `/lobster` use one shared action-cooldown ledger:
+
+| Dimension | Duration |
+|---|---:|
+| Actor | 30 seconds |
+| Target | 90 seconds |
+| Channel | 12 seconds |
+
+A successful `/slap` blocks `/lobster`, and a successful `/lobster` blocks
+`/slap`, for every applicable dimension. Concurrent requests must resolve
+atomically.
+
+Target responses do not consume or reset invocation cooldowns.
+
+## Species Metadata
+
+Each catalog entry must include:
+
+- AphiaID.
+- Scientific and display names.
+- Family and broad body plan.
+- Habitat and depth band.
+- Geographic region when known.
+- Claw, antenna, tail, and body-form capabilities.
+- Permitted action families.
+- Prohibited anatomical actions.
+- Narrative vocabulary.
+- Approved scene identifiers.
+- Accessibility description fragments.
+
+Species metadata controls behavior. A species without large claws cannot be
+rendered pinching a person.
+
+## Artwork Model
+
+### Coverage
+
+- Every species receives at least four approved production scenes.
+- Visually prominent or culturally familiar species may receive up to eight.
+- The expected initial corpus is approximately 1,040 to 2,080 images.
+- Species selection remains uniform regardless of art-pack size.
+
+### Output Specification
+
+- Format: WebP.
+- Dimensions: exactly `768x512`.
+- Aspect ratio: `3:2`.
+- Color profile: sRGB.
+- Metadata: stripped except required provenance metadata.
+- Target average file size: 75 KB or less.
+- Maximum file size: 120 KB.
+- No readable text, brands, watermarks, or third-party characters.
+
+### Visual Dimensions
+
+Every asset manifest records:
+
+- Species and family.
+- Action.
+- Environment.
+- Historical or fictional era.
+- Visual medium.
+- Tone.
+- Adult cast.
+- Camera position and lens language.
+- Composition.
+- Lighting.
+- Palette.
+- Scene-family identifier.
+- Generation prompt version.
+- Human and automated review status.
+
+### Required Visual Range
+
+The corpus must deliberately cover:
+
+- Naturalistic documentary photography.
+- Cinematic action and comedy.
+- Underwater and deep-sea horror.
+- Film noir.
+- Pulp adventure illustration.
+- Gouache and watercolor illustration.
+- Oil-painting tableaux.
+- Inked comic panels without lettering.
+- Cel animation.
+- Stop-motion and miniature dioramas.
+- Retro science fiction.
+- Medieval and mythic fantasy.
+- Fashion-editorial photography.
+- Sports-broadcast imagery.
+- Surreal collage.
+- Vintage scientific-plate composition.
+
+Settings must span natural habitats, beaches, reefs, ships, streets, transit,
+markets, theaters, museums, arenas, castles, laboratories, festivals, deep-sea
+vehicles, and fictional worlds. Offices and hearing rooms may appear only as a
+small minority.
+
+Adult human casts must vary gender presentation, skin tone, age, body type,
+wardrobe, and role. Some scenes may feature robots, fantasy adults, or no humans
+when the selected action remains legible.
+
+### Diversity Quotas
+
+- No visual medium exceeds 15% of the corpus.
+- No environment family exceeds 10%.
+- Office, boardroom, or hearing-room settings combined remain below 3%.
+- No single cast pattern exceeds 5%.
+- At least half of human scenes prominently include an adult woman.
+- At least 20% of scenes use non-photorealistic media.
+- At least 15% of scenes contain no conventional modern workplace.
+- Consecutive assets for one species must differ in medium, environment,
+  composition, and tone.
+- Perceptual near-duplicates are rejected.
+
+## Asset Storage
+
+Production assets use a dedicated public Cloudflare R2 bucket and a production
+custom domain.
+
+Object keys are immutable and versioned:
+
+`lobster/{snapshotId}/{aphiaId}/{sceneId}-{contentHash}.webp`
+
+The repository stores:
+
+- Taxonomy snapshots.
+- Normalized catalog data.
+- Scene manifests.
+- Prompts and prompt versions.
+- Checksums.
+- Production asset URLs.
+- Audit reports.
+
+The repository does not store the full production image corpus.
+
+## Discord Card
+
+The canonical Carbon card includes:
+
+- Encounter identifier.
+- Scientific and display species names.
+- Family.
+- Artwork with meaningful alt text.
+- Species-specific headline and narrative.
+- Encounter metrics.
+- Taxonomy snapshot identifier.
+- Target-response status.
+- `Return To Sender` and `Offer Butter` buttons when available.
+
+No embed payloads or hand-built raw component objects are used.
+
+## Data Requirements
+
+Persist:
+
+- Encounter ID and interaction ID.
+- Guild, channel, and Discord message IDs.
+- Actor and target IDs.
+- Target bot status.
+- Taxonomy snapshot ID.
+- Species AphiaID, accepted name, display name, and family.
+- Scene ID, immutable asset URL, and asset checksum.
+- Narrative, headline, metrics, and accessibility description.
+- Response type, response actor, response timestamp, and response result.
+- Counter-event fields when applicable.
+- Creation and message-binding timestamps.
+
+Historical events must remain renderable after taxonomy or artwork refreshes.
+
+## Integrity And Failure Handling
+
+- Interaction retries reuse the persisted encounter.
+- Component actions must match the stored guild, channel, message, target, and
+  encounter identifiers.
+- Only one target response may be recorded.
+- Missing catalog or artwork entries fail privately before publishing.
+- Failed Discord publication does not create an unbound reusable event.
+- Failed card synchronization is logged and can be retried idempotently.
+- A taxonomy refresh never mutates historical encounter records.
+
+## Observability
+
+Structured logs include:
+
+- Encounter ID.
+- Interaction ID.
+- Snapshot ID.
+- AphiaID and family.
+- Scene ID.
+- Actor, target, and channel cooldown decisions.
+- Message-binding result.
+- Target-response transition.
+- Discord response status.
+
+Prompts and private runtime credentials must not be logged.
+
+## Validation
+
+Automated validation must prove:
+
+- Every included species has exactly one catalog record.
+- Every species has at least four approved assets.
+- Every asset URL is immutable and reachable.
+- Every image is valid WebP at exactly `768x512`.
+- Every image is at or below 120 KB.
+- Checksums match the production objects.
+- Species never use prohibited anatomical actions.
+- Diversity quotas pass.
+- Perceptual duplicate thresholds pass.
+- Alt text exists for every scene.
+- Shared cooldowns work in both command directions.
+- Concurrent response attempts produce one terminal result.
+- Unauthorized invocations and responses are rejected privately.
+- `bun test`, `bun run typecheck`, and `bun run deploy:dry-run` pass.
+
+## Release Gates
+
+Implementation may begin only after:
+
+1. All 327 slap scenes have been regenerated and replaced.
+2. Every slap scene is exactly `768x512`.
+3. The slap diversity and file-size audits pass.
+4. The replacement slap corpus is visually reviewed.
+5. The slap cache-busting change is deployed.
+6. Cloudflare's configured production build and CodeQL pass.
+7. The user approves the remediated slap experience.
+
+Production release additionally requires:
+
+1. Approved taxonomy parent scope and snapshot.
+2. Dedicated R2 bucket and custom domain.
+3. Complete species and artwork coverage.
+4. Anatomy and diversity review sign-off.
+5. A successful upload-and-retrieval audit of at least 1,000 objects.
+6. Discord staging smoke tests for command, counter, response, cooldown, and
+   retry behavior.
+
+## Product Decisions
+
+| ID | Status | Decision |
+|---|---|---|
+| LOB-1 | Confirmed | The final artwork size is `768x512` WebP |
+| LOB-2 | Confirmed | Every accepted extant marine species in the six approved families is represented |
+| LOB-3 | Confirmed | Artwork is species-specific rather than a universal outcome matrix |
+| LOB-4 | Confirmed | Slap artwork remediation blocks lobster implementation |
+| LOB-5 | Proposed | Each species receives four to eight production scenes |
+| LOB-6 | Proposed | Invocation uses the same three authorized roles as `/slap` |
+| LOB-7 | Proposed | `/slap` and `/lobster` share cooldowns |
+| LOB-8 | Proposed | Production artwork is stored in a dedicated public R2 bucket |
+| LOB-9 | Proposed | Target responses are `Return To Sender` and `Offer Butter` |
+
+## Open Questions
+
+1. Who owns scientific anatomy review and final art approval?
+2. What snapshot refresh cadence should be used after v1?
+3. What bucket and custom-domain names should be provisioned?
+4. Should Hermit, Rock Lobster, bots, and self-targets receive dedicated
+   species-specific scenes in v1?
+5. Should `Return To Sender` select a second species or reuse the original
+   species?
+6. Should rare species receive equal selection probability or a separately
+   approved rarity model after v1?
+
+## References
+
+- World Register of Marine Species web services:
+  `https://www.marinespecies.org/aphia.php?p=webservice`
+- Updated checklist publication record:
+  `https://scholars.ntou.edu.tw/handle/123456789/16132`
+- Cloudflare R2 public bucket guidance:
+  `https://developers.cloudflare.com/r2/buckets/public-buckets/`

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+output/
+tmp/
 .env
 src/forms/styles.generated.css
 src/forms/styles.generated.ts

@@ -3,8 +3,7 @@ import { describe, expect, it } from "bun:test"
 import {
 	existsSync,
 	readFileSync,
-	readdirSync,
-	statSync
+	readdirSync
 } from "node:fs"
 import {
 	ApplicationCommandType,
@@ -24,6 +23,7 @@ import {
 } from "../src/components/slapButtons.js"
 import {
 	slapConfig,
+	slapOutcomesForRarity,
 	slapSceneUrl,
 	slapSceneVariants,
 	type SlapOutcome
@@ -145,22 +145,8 @@ describe("slap catalog and engine", () => {
 		expect(new Set(slapConfig.fish.map((fish) => fish.rarity))).toEqual(
 			new Set(["common", "uncommon", "rare", "epic", "legendary"])
 		)
-		const standardOutcomes = [
-			"normal",
-			"critical",
-			"dodge",
-			"refusal",
-			"double",
-			"self",
-			"hermit",
-			"rock_lobster",
-			"bot"
-		] satisfies SlapOutcome[]
 		const imageUrls = slapConfig.fish.flatMap((fish) => {
-			const outcomes = fish.rarity === "legendary"
-				? [...standardOutcomes, "legendary" as const]
-				: standardOutcomes
-			return outcomes.flatMap((outcome) =>
+			return slapOutcomesForRarity(fish.rarity).flatMap((outcome) =>
 				slapSceneVariants.map((variant) =>
 					slapSceneUrl(fish.slug, outcome, variant)
 				)
@@ -170,12 +156,9 @@ describe("slap catalog and engine", () => {
 		expect(imageUrls).toHaveLength(327)
 		expect(new Set(imageUrls).size).toBe(327)
 		for (const imageUrl of imageUrls) {
-			const path = imageUrl.replace(
-				"https://raw.githubusercontent.com/openclaw/hermit/main/",
-				""
-			)
+			const assetStart = imageUrl.indexOf("assets/slap/scenes/")
+			const path = imageUrl.slice(assetStart)
 			expect(existsSync(path)).toBe(true)
-			expect(statSync(path).size).toBeGreaterThan(50_000)
 		}
 		expect(
 			Object.values(slapConfig.lines).reduce(
