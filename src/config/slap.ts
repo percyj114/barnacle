@@ -41,12 +41,15 @@ export const slapOutcomesForRarity = (rarity: SlapRarity) =>
 		? [...slapStandardOutcomes, "legendary" as const]
 		: [...slapStandardOutcomes]
 
+export const slapSceneRevision =
+	"da5edf3065a5440241f80fa4d07be4cb72384151"
+
 export const slapSceneUrl = (
 	fishSlug: string,
 	outcome: SlapOutcome,
 	variant: SlapSceneVariant
 ) =>
-	`https://raw.githubusercontent.com/openclaw/hermit/main/assets/slap/scenes/${fishSlug}/${outcome}-${variant.toString().padStart(2, "0")}.webp`
+	`https://raw.githubusercontent.com/openclaw/hermit/${slapSceneRevision}/assets/slap/scenes/${fishSlug}/${outcome}-${variant.toString().padStart(2, "0")}.webp`
 
 export const slapConfig = {
 	guildId: nominationConfig.guildId,

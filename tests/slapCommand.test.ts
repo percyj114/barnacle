@@ -24,6 +24,7 @@ import {
 import {
 	slapConfig,
 	slapOutcomesForRarity,
+	slapSceneRevision,
 	slapSceneUrl,
 	slapSceneVariants,
 	type SlapOutcome
@@ -155,9 +156,13 @@ describe("slap catalog and engine", () => {
 
 		expect(imageUrls).toHaveLength(327)
 		expect(new Set(imageUrls).size).toBe(327)
+		expect(slapSceneRevision).toMatch(/^[a-f0-9]{40}$/)
+		const repositoryRevisionPrefix =
+			`https://raw.githubusercontent.com/openclaw/hermit/${slapSceneRevision}/`
 		for (const imageUrl of imageUrls) {
-			const assetStart = imageUrl.indexOf("assets/slap/scenes/")
-			const path = imageUrl.slice(assetStart)
+			expect(imageUrl.startsWith(repositoryRevisionPrefix)).toBe(true)
+			const path = imageUrl.slice(repositoryRevisionPrefix.length)
+			expect(path.startsWith("assets/slap/scenes/")).toBe(true)
 			expect(existsSync(path)).toBe(true)
 		}
 		expect(
