@@ -1,7 +1,7 @@
 import { nominationConfig } from "./nominations.js"
 
 export const lobsterArtworkRevision =
-	"d1ffbe7080fca127286f19e494a22b4ac89cba43"
+	"03fe3c5f1de149f6cae9121bb0094287b22cbfe5"
 
 export const lobsterScenePath = (aphiaId: number, sceneId: string) =>
 	`assets/lobster/scenes/${aphiaId}/${sceneId}.webp`
